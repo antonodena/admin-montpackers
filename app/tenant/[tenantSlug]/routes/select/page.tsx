@@ -165,8 +165,8 @@ export default function TenantSelectLibraryRoutesPage() {
           </Breadcrumb>
         </header>
 
-        <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <section className="rounded-xl border bg-card p-4 md:p-6">
+        <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
+          <section className="min-w-0 rounded-xl border bg-card p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-lg font-semibold">Seleccionar rutas de la biblioteca</h1>
               <p className="text-sm text-muted-foreground">

@@ -20,6 +20,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { getTenantBySlug } from "@/lib/mock-data"
+import { getPoiById } from "@/lib/poi-storage"
 import { getRouteById } from "@/lib/route-storage"
 
 type Crumb = {
@@ -62,6 +63,24 @@ function getBreadcrumbs(pathname: string): Crumb[] {
       crumbs.push({ label: route?.name ?? routeId, href: `/admin/routes/${routeId}` })
       if (action === "edit") {
         crumbs.push({ label: "Editar ruta" })
+      }
+    }
+    return crumbs
+  }
+
+  if (pathname.startsWith("/admin/pois")) {
+    crumbs.push({ label: "Biblioteca de POIs", href: "/admin/pois" })
+    const poiId = pathname.split("/")[3]
+    const action = pathname.split("/")[4]
+    if (poiId) {
+      if (poiId === "new") {
+        crumbs.push({ label: "Nuevo POI" })
+        return crumbs
+      }
+      const poi = getPoiById(poiId)
+      crumbs.push({ label: poi?.name ?? poiId, href: `/admin/pois/${poiId}` })
+      if (action === "edit") {
+        crumbs.push({ label: "Editar POI" })
       }
     }
     return crumbs

@@ -206,24 +206,34 @@ function includesOrAll<T>(selected: T[], current: T) {
   return selected.includes(current)
 }
 
-function getColumnResponsiveClass(columnId: string) {
+function getColumnResponsiveClass(mode: RouteLibraryTableMode, columnId: string) {
+  if (columnId === "select" && mode === "select") {
+    return ""
+  }
+
+  if (mode === "browse" && columnId === "actions") {
+    return ""
+  }
+
   switch (columnId) {
+    case "difficulty":
+      return "hidden sm:table-cell"
+    case "sport":
+      return "hidden md:table-cell"
+    case "distanceKm":
+      return "hidden lg:table-cell"
+    case "durationMin":
+      return "hidden lg:table-cell"
     case "coverImageUrl":
       return "hidden xl:table-cell"
     case "tenantCount":
-      return "hidden lg:table-cell"
-    case "sport":
-      return "hidden md:table-cell"
+      return "hidden xl:table-cell"
     case "isCircular":
       return "hidden xl:table-cell"
     case "isFamilyFriendly":
       return "hidden xl:table-cell"
-    case "distanceKm":
-      return "hidden lg:table-cell"
     case "elevationGainM":
       return "hidden xl:table-cell"
-    case "durationMin":
-      return "hidden lg:table-cell"
     case "author":
       return "hidden 2xl:table-cell"
     default:
@@ -437,6 +447,9 @@ export function RouteLibraryTable({
       {
         accessorKey: "sport",
         header: ({ column }) => <ColumnHeader column={column} title="Deporte" />,
+        cell: ({ row }) => (
+          <span className="block max-w-[160px] truncate">{row.original.sport}</span>
+        ),
       },
       {
         accessorKey: "difficulty",
@@ -470,6 +483,9 @@ export function RouteLibraryTable({
       {
         accessorKey: "author",
         header: ({ column }) => <ColumnHeader column={column} title="Autor" />,
+        cell: ({ row }) => (
+          <span className="block max-w-[160px] truncate">{row.original.author}</span>
+        ),
       }
     )
 
@@ -666,7 +682,7 @@ export function RouteLibraryTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
@@ -705,15 +721,15 @@ export function RouteLibraryTable({
         )}
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="min-w-0 rounded-md border">
+        <Table containerClassName="overflow-hidden" className="table-fixed w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className={cn(getColumnResponsiveClass(header.column.id))}
+                    className={cn(getColumnResponsiveClass(mode, header.column.id))}
                   >
                     {header.isPlaceholder
                       ? null
@@ -733,7 +749,7 @@ export function RouteLibraryTable({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={cn(getColumnResponsiveClass(cell.column.id))}
+                      className={cn(getColumnResponsiveClass(mode, cell.column.id))}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>

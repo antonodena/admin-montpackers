@@ -37,7 +37,7 @@ export default function AdminRoutesPage() {
   }
 
   return (
-    <section className="rounded-xl border bg-card p-4 md:p-6">
+    <section className="min-w-0 rounded-xl border bg-card p-4 md:p-6">
       <div className="mb-4">
         <h1 className="text-lg font-semibold">Biblioteca de rutas</h1>
         <p className="text-sm text-muted-foreground">

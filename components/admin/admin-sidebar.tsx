@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   Building2,
   ChevronsUpDown,
+  MapPin,
   Route,
   ShieldCheck,
   Users,
@@ -29,6 +30,7 @@ const adminItems = [
   { title: "Tenants", href: "/admin/tenants", icon: Building2 },
   { title: "Usuarios", href: "/admin/users", icon: Users },
   { title: "Biblioteca de rutas", href: "/admin/routes", icon: Route },
+  { title: "Biblioteca de POIs", href: "/admin/pois", icon: MapPin },
 ]
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
