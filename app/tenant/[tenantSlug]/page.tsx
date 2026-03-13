@@ -1,29 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import * as React from "react"
 import { useParams } from "next/navigation"
 
 import { TenantDashboardPage } from "@/components/tenant/tenant-dashboard-page"
 import { Button } from "@/components/ui/button"
-import { tenants } from "@/lib/mock-data"
-import { getCreatedTenantsFromStorage, mergeTenants } from "@/lib/tenant-storage"
+import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
 
 export default function TenantPage() {
   const params = useParams<{ tenantSlug: string }>()
-  const tenantSlug = params.tenantSlug
-
-  const [createdTenants, setCreatedTenants] = React.useState(getCreatedTenantsFromStorage())
-
-  React.useEffect(() => {
-    setCreatedTenants(getCreatedTenantsFromStorage())
-  }, [])
-
-  const allTenants = React.useMemo(
-    () => mergeTenants(tenants, createdTenants),
-    [createdTenants]
-  )
-  const tenant = allTenants.find((item) => item.slug === tenantSlug)
+  const tenant = useResolvedTenant(params.tenantSlug)
 
   if (!tenant) {
     return (

@@ -19,7 +19,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { getTenantBySlug } from "@/lib/mock-data"
+import { useResolvedTenants } from "@/hooks/use-resolved-tenant"
 import { getPoiById } from "@/lib/poi-storage"
 import { getRouteById } from "@/lib/route-storage"
 
@@ -28,7 +28,10 @@ type Crumb = {
   href?: string
 }
 
-function getBreadcrumbs(pathname: string): Crumb[] {
+function getBreadcrumbs(
+  pathname: string,
+  availableTenants: Array<{ slug: string; name: string }>
+): Crumb[] {
   const crumbs: Crumb[] = [{ label: "Admin panel", href: "/admin/tenants" }]
 
   if (pathname.startsWith("/admin/tenants")) {
@@ -39,7 +42,7 @@ function getBreadcrumbs(pathname: string): Crumb[] {
         crumbs.push({ label: "Nuevo tenant" })
         return crumbs
       }
-      const tenant = getTenantBySlug(tenantSlug)
+      const tenant = availableTenants.find((item) => item.slug === tenantSlug)
       crumbs.push({ label: tenant?.name ?? tenantSlug })
     }
     return crumbs
@@ -95,7 +98,11 @@ type AdminShellProps = {
 
 export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname()
-  const breadcrumbs = getBreadcrumbs(pathname)
+  const availableTenants = useResolvedTenants()
+  const breadcrumbs = React.useMemo(
+    () => getBreadcrumbs(pathname, availableTenants),
+    [pathname, availableTenants]
+  )
 
   return (
     <SidebarProvider defaultOpen>

@@ -12,6 +12,13 @@ export type KioskVideoAsset = {
   updatedAt: number
 }
 
+export type KioskImageAsset = {
+  id: string
+  dataUrl: string
+  fileName: string
+  mimeType: string
+}
+
 export type KioskConfig = {
   id: KioskId
   name: string
@@ -21,6 +28,7 @@ export type KioskConfig = {
     lng: number
   }
   screensaverVideo: KioskVideoAsset | null
+  imageAssets: KioskImageAsset[]
 }
 
 export type TenantKioskConfigMap = Record<string, Record<KioskId, KioskConfig>>
@@ -53,6 +61,7 @@ function buildDefaultKioskConfig(id: KioskId): KioskConfig {
       lng: 0,
     },
     screensaverVideo: null,
+    imageAssets: [],
   }
 }
 
@@ -90,6 +99,36 @@ function sanitizeKioskVideoAsset(value: unknown): KioskVideoAsset | null {
   }
 }
 
+function sanitizeKioskImageAssets(value: unknown): KioskImageAsset[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isObjectRecord(item)) {
+      return []
+    }
+
+    const id = typeof item.id === "string" && item.id.trim().length > 0 ? item.id : `image_${index}`
+    const dataUrl = typeof item.dataUrl === "string" ? item.dataUrl.trim() : ""
+    const fileName = typeof item.fileName === "string" ? item.fileName.trim() : ""
+    const mimeType = typeof item.mimeType === "string" ? item.mimeType.trim() : ""
+
+    if (!dataUrl || !fileName || !mimeType) {
+      return []
+    }
+
+    return [
+      {
+        id,
+        dataUrl,
+        fileName,
+        mimeType,
+      } satisfies KioskImageAsset,
+    ]
+  })
+}
+
 function sanitizeKioskConfig(id: KioskId, value: unknown): KioskConfig {
   const defaults = buildDefaultKioskConfig(id)
 
@@ -116,6 +155,7 @@ function sanitizeKioskConfig(id: KioskId, value: unknown): KioskConfig {
       lng,
     },
     screensaverVideo: sanitizeKioskVideoAsset(value.screensaverVideo),
+    imageAssets: sanitizeKioskImageAssets(value.imageAssets),
   }
 }
 

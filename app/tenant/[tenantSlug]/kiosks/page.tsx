@@ -3,7 +3,7 @@
 import Link from "next/link"
 import * as React from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { Clapperboard, LoaderCircle, Trash2, Upload } from "lucide-react"
+import { Clapperboard, ImagePlus, LoaderCircle, Trash2, Upload } from "lucide-react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { Button } from "@/components/ui/button"
@@ -40,14 +40,23 @@ import {
   saveKioskVideoBlob,
 } from "@/lib/kiosk-video-storage"
 import {
+  createImageAssetId,
+  getImagePayloadSize,
+  IMAGE_UPLOAD_ACCEPT,
+  MAX_IMAGE_UPLOAD_BYTES,
+  MAX_IMAGE_UPLOAD_COUNT,
+  optimizeImageFile,
+  validateImageFile,
+} from "@/lib/image-upload"
+import {
   getTenantKioskConfigs,
   saveTenantKioskConfig,
   type KioskConfig,
   type KioskId,
+  type KioskImageAsset,
   type KioskVideoAsset,
 } from "@/lib/kiosk-storage"
-import { tenants } from "@/lib/mock-data"
-import { getCreatedTenantsFromStorage, mergeTenants } from "@/lib/tenant-storage"
+import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
 import { cn } from "@/lib/utils"
 
 const KIOSK_OPTIONS: { id: KioskId; label: string }[] = [
@@ -58,6 +67,8 @@ const KIOSK_OPTIONS: { id: KioskId; label: string }[] = [
 const SCREENSAVER_VIDEO_MAX_SIZE = 50 * 1024 * 1024
 const SCREENSAVER_VIDEO_ALLOWED_EXTENSIONS = ["mp4"]
 const SCREENSAVER_VIDEO_ALLOWED_MIME_TYPES = ["video/mp4"]
+const MAX_KIOSK_IMAGES = MAX_IMAGE_UPLOAD_COUNT
+const MAX_KIOSK_IMAGE_BYTES = MAX_IMAGE_UPLOAD_BYTES
 
 type KioskConfigDraft = {
   id: KioskId
@@ -72,6 +83,8 @@ type KioskConfigDraft = {
   isVideoPreviewLoading: boolean
   previewLoadFailed: boolean
   videoError: string | null
+  imageAssets: KioskImageAsset[]
+  imageError: string | null
 }
 
 type KioskDraftMap = Record<KioskId, KioskConfigDraft>
@@ -188,6 +201,8 @@ function configToDraft(config: KioskConfig): KioskConfigDraft {
     isVideoPreviewLoading: false,
     previewLoadFailed: false,
     videoError: null,
+    imageAssets: config.imageAssets,
+    imageError: null,
   }
 }
 
@@ -207,18 +222,21 @@ export default function TenantKiosksPage() {
   const searchParams = useSearchParams()
 
   const tenantSlug = params.tenantSlug
+  const tenant = useResolvedTenant(tenantSlug)
   const activeKioskId = sanitizeKioskId(searchParams.get("kiosk"))
   const activeKioskLabel = KIOSK_OPTIONS.find((item) => item.id === activeKioskId)?.label ?? "Hall"
 
-  const [createdTenants, setCreatedTenants] = React.useState(getCreatedTenantsFromStorage())
   const [kioskDrafts, setKioskDrafts] = React.useState<KioskDraftMap | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
   const [formError, setFormError] = React.useState<string | null>(null)
   const [saveMessage, setSaveMessage] = React.useState<string | null>(null)
   const [isDragActive, setIsDragActive] = React.useState(false)
+  const [isImageDragActive, setIsImageDragActive] = React.useState(false)
 
   const videoInputRef = React.useRef<HTMLInputElement | null>(null)
+  const imageInputRef = React.useRef<HTMLInputElement | null>(null)
   const dragCounterRef = React.useRef(0)
+  const imageDragCounterRef = React.useRef(0)
   const previousActiveKioskIdRef = React.useRef<KioskId | null>(null)
   const kioskDraftsRef = React.useRef<KioskDraftMap | null>(null)
 
@@ -227,21 +245,10 @@ export default function TenantKiosksPage() {
   }, [kioskDrafts])
 
   React.useEffect(() => {
-    setCreatedTenants(getCreatedTenantsFromStorage())
-  }, [])
-
-  React.useEffect(() => {
     return () => {
       revokeAllDraftPreviewUrls(kioskDraftsRef.current)
     }
   }, [])
-
-  const allTenants = React.useMemo(
-    () => mergeTenants(tenants, createdTenants),
-    [createdTenants]
-  )
-
-  const tenant = allTenants.find((item) => item.slug === tenantSlug)
   const activeDraft = kioskDrafts?.[activeKioskId] ?? null
 
   const activeVideoMetadata =
@@ -281,7 +288,9 @@ export default function TenantKiosksPage() {
     setFormError(null)
     setSaveMessage(null)
     setIsDragActive(false)
+    setIsImageDragActive(false)
     dragCounterRef.current = 0
+    imageDragCounterRef.current = 0
   }, [tenantSlug])
 
   React.useEffect(() => {
@@ -313,7 +322,9 @@ export default function TenantKiosksPage() {
 
     previousActiveKioskIdRef.current = activeKioskId
     setIsDragActive(false)
+    setIsImageDragActive(false)
     dragCounterRef.current = 0
+    imageDragCounterRef.current = 0
   }, [activeKioskId])
 
   React.useEffect(() => {
@@ -439,9 +450,19 @@ export default function TenantKiosksPage() {
     videoInputRef.current?.click()
   }
 
+  function openImagePicker() {
+    imageInputRef.current?.click()
+  }
+
   function resetVideoInput() {
     if (videoInputRef.current) {
       videoInputRef.current.value = ""
+    }
+  }
+
+  function resetImageInput() {
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ""
     }
   }
 
@@ -485,6 +506,68 @@ export default function TenantKiosksPage() {
     resetVideoInput()
   }
 
+  async function handleImageSelection(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0 || !activeDraft) {
+      return
+    }
+
+    const incomingFiles = Array.from(fileList)
+
+    if (activeDraft.imageAssets.length + incomingFiles.length > MAX_KIOSK_IMAGES) {
+      updateActiveDraft((current) => ({
+        ...current,
+        imageError: `Solo se permiten ${MAX_KIOSK_IMAGES} imágenes por kiosko.`,
+      }))
+      setFormError(null)
+      setSaveMessage(null)
+      resetImageInput()
+      return
+    }
+
+    try {
+      const nextAssets: KioskImageAsset[] = []
+
+      for (const file of incomingFiles) {
+        const validationError = validateImageFile(file)
+        if (validationError) {
+          throw new Error(validationError)
+        }
+
+        const optimized = await optimizeImageFile(file)
+        nextAssets.push({
+          id: createImageAssetId("kiosk-image"),
+          dataUrl: optimized.dataUrl,
+          fileName: file.name,
+          mimeType: optimized.mimeType,
+        })
+      }
+
+      const mergedAssets = [...activeDraft.imageAssets, ...nextAssets]
+
+      if (getImagePayloadSize(mergedAssets) > MAX_KIOSK_IMAGE_BYTES) {
+        throw new Error("Las imágenes superan el límite total de 4MB.")
+      }
+
+      updateActiveDraft((current) => ({
+        ...current,
+        imageAssets: [...current.imageAssets, ...nextAssets],
+        imageError: null,
+      }))
+      setFormError(null)
+      setSaveMessage(null)
+    } catch (error) {
+      updateActiveDraft((current) => ({
+        ...current,
+        imageError:
+          error instanceof Error ? error.message : "No se han podido cargar las imágenes.",
+      }))
+      setFormError(null)
+      setSaveMessage(null)
+    } finally {
+      resetImageInput()
+    }
+  }
+
   function handleVideoInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     handleVideoSelection(event.target.files)
   }
@@ -511,6 +594,22 @@ export default function TenantKiosksPage() {
     setFormError(null)
     setSaveMessage(null)
     resetVideoInput()
+  }
+
+  function handleRemoveImage(assetId: string) {
+    if (!activeDraft) {
+      return
+    }
+
+    updateActiveDraft((current) => ({
+      ...current,
+      imageAssets: current.imageAssets.filter((asset) => asset.id !== assetId),
+      imageError: null,
+    }))
+
+    setFormError(null)
+    setSaveMessage(null)
+    resetImageInput()
   }
 
   async function handleSaveConfig(event: React.FormEvent<HTMLFormElement>) {
@@ -609,6 +708,7 @@ export default function TenantKiosksPage() {
           lng,
         },
         screensaverVideo: nextScreensaverVideo,
+        imageAssets: activeDraft.imageAssets,
       }
 
       saveTenantKioskConfig(tenantSlug, configToSave)
@@ -900,6 +1000,132 @@ export default function TenantKiosksPage() {
 
                     {activeDraft.videoError && (
                       <p className="text-sm text-rose-600">{activeDraft.videoError}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Galería de imágenes</CardTitle>
+                    <CardDescription>
+                      Añade imágenes complementarias del kiosko. Se guardan aparte del vídeo.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept={IMAGE_UPLOAD_ACCEPT}
+                      multiple
+                      className="hidden"
+                      onChange={(event) => {
+                        void handleImageSelection(event.target.files)
+                      }}
+                    />
+
+                    <div
+                      className={cn(
+                        "rounded-xl border border-dashed transition-colors",
+                        isImageDragActive
+                          ? "border-primary bg-primary/5"
+                          : "border-border/70 bg-muted/20"
+                      )}
+                      onDragEnter={(event) => {
+                        event.preventDefault()
+                        imageDragCounterRef.current += 1
+                        setIsImageDragActive(true)
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault()
+                        event.dataTransfer.dropEffect = "copy"
+                      }}
+                      onDragLeave={(event) => {
+                        event.preventDefault()
+                        imageDragCounterRef.current = Math.max(0, imageDragCounterRef.current - 1)
+
+                        if (imageDragCounterRef.current === 0) {
+                          setIsImageDragActive(false)
+                        }
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        imageDragCounterRef.current = 0
+                        setIsImageDragActive(false)
+                        void handleImageSelection(event.dataTransfer.files)
+                      }}
+                    >
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="flex w-full flex-col items-center justify-center gap-3 p-8 text-center"
+                        onClick={openImagePicker}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            openImagePicker()
+                          }
+                        }}
+                      >
+                        <div className="flex size-12 items-center justify-center rounded-full border bg-background">
+                          <ImagePlus className="size-5 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            Arrastra imágenes aquí o haz click para seleccionarlas
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            PNG, JPG, JPEG, WEBP o SVG. Máximo {MAX_KIOSK_IMAGES} imágenes y 4MB
+                            en total.
+                          </p>
+                          {activeDraft.imageAssets.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              {activeDraft.imageAssets.length}/{MAX_KIOSK_IMAGES} imágenes ·{" "}
+                              {formatFileSize(getImagePayloadSize(activeDraft.imageAssets))}
+                            </p>
+                          )}
+                        </div>
+                        <Button type="button" variant="outline">
+                          <Upload className="size-4" />
+                          {activeDraft.imageAssets.length > 0
+                            ? "Añadir más imágenes"
+                            : "Seleccionar imágenes"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {activeDraft.imageError && (
+                      <p className="text-sm text-rose-600">{activeDraft.imageError}</p>
+                    )}
+
+                    {activeDraft.imageAssets.length > 0 && (
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {activeDraft.imageAssets.map((asset) => (
+                          <div key={asset.id} className="overflow-hidden rounded-xl border bg-muted/10">
+                            <div className="aspect-[4/3] overflow-hidden border-b bg-muted">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={asset.dataUrl}
+                                alt={asset.fileName}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="flex items-start justify-between gap-3 p-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium">{asset.fileName}</p>
+                                <p className="text-xs text-muted-foreground">{asset.mimeType}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleRemoveImage(asset.id)}
+                              >
+                                <Trash2 className="size-4" />
+                                Eliminar
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </CardContent>
                 </Card>

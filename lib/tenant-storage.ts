@@ -1,6 +1,27 @@
 import type { Tenant } from "@/lib/mock-data"
 
 export const CREATED_TENANTS_STORAGE_KEY = "montpackers.createdTenants.v1"
+export const STORED_TENANTS_UPDATED_EVENT = "montpackers:tenants-updated"
+
+function canUseStorage() {
+  return typeof window !== "undefined" && typeof localStorage !== "undefined"
+}
+
+function getOptionalString(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : undefined
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function emitStoredTenantsUpdated() {
+  if (!canUseStorage()) {
+    return
+  }
+
+  window.dispatchEvent(new CustomEvent(STORED_TENANTS_UPDATED_EVENT))
+}
 
 export function slugifyHotelName(name: string) {
   return sanitizeSlug(
@@ -36,13 +57,58 @@ export function isValidHexColor(value: string) {
   return /^#[0-9A-Fa-f]{6}$/.test(value)
 }
 
-export function getCreatedTenantsFromStorage() {
-  if (typeof window === "undefined") {
+function parseStoredTenant(value: unknown): Tenant | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  if (
+    typeof value.id !== "string" ||
+    typeof value.slug !== "string" ||
+    typeof value.name !== "string" ||
+    typeof value.siteUrl !== "string"
+  ) {
+    return null
+  }
+
+  const tenant: Tenant = {
+    id: value.id,
+    slug: value.slug,
+    name: value.name,
+    siteUrl: value.siteUrl,
+  }
+
+  const imageUrl = getOptionalString(value.imageUrl)
+  const logoDataUrl = getOptionalString(value.logoDataUrl)
+  const faviconDataUrl = getOptionalString(value.faviconDataUrl)
+  const brandColor = getOptionalString(value.brandColor)
+
+  if (imageUrl) {
+    tenant.imageUrl = imageUrl
+  }
+
+  if (logoDataUrl) {
+    tenant.logoDataUrl = logoDataUrl
+  }
+
+  if (faviconDataUrl) {
+    tenant.faviconDataUrl = faviconDataUrl
+  }
+
+  if (brandColor && isValidHexColor(brandColor)) {
+    tenant.brandColor = brandColor.toUpperCase()
+  }
+
+  return tenant
+}
+
+export function getStoredTenantsFromStorage() {
+  if (!canUseStorage()) {
     return [] as Tenant[]
   }
 
   try {
-    const raw = window.localStorage.getItem(CREATED_TENANTS_STORAGE_KEY)
+    const raw = localStorage.getItem(CREATED_TENANTS_STORAGE_KEY)
     if (!raw) {
       return []
     }
@@ -52,26 +118,31 @@ export function getCreatedTenantsFromStorage() {
       return []
     }
 
-    return parsed.filter(
-      (tenant): tenant is Tenant =>
-        typeof tenant?.id === "string" &&
-        typeof tenant?.slug === "string" &&
-        typeof tenant?.name === "string" &&
-        typeof tenant?.siteUrl === "string"
-    )
+    return parsed
+      .map((tenant) => parseStoredTenant(tenant))
+      .filter((tenant): tenant is Tenant => tenant !== null)
   } catch {
     return []
   }
 }
 
-export function saveCreatedTenant(tenant: Tenant) {
-  if (typeof window === "undefined") {
+export function getCreatedTenantsFromStorage() {
+  return getStoredTenantsFromStorage()
+}
+
+export function upsertStoredTenant(tenant: Tenant) {
+  if (!canUseStorage()) {
     return
   }
 
-  const current = getCreatedTenantsFromStorage().filter((item) => item.slug !== tenant.slug)
+  const current = getStoredTenantsFromStorage().filter((item) => item.slug !== tenant.slug)
   const next = [tenant, ...current]
-  window.localStorage.setItem(CREATED_TENANTS_STORAGE_KEY, JSON.stringify(next))
+  localStorage.setItem(CREATED_TENANTS_STORAGE_KEY, JSON.stringify(next))
+  emitStoredTenantsUpdated()
+}
+
+export function saveCreatedTenant(tenant: Tenant) {
+  upsertStoredTenant(tenant)
 }
 
 export function mergeTenants(seedTenants: Tenant[], createdTenants: Tenant[]) {

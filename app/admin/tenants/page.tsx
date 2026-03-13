@@ -8,24 +8,17 @@ import { CreateTenantModal } from "@/components/admin/create-tenant-modal"
 import { DataTable } from "@/components/admin/data-table"
 import { tenantsColumns } from "@/components/admin/tenants-columns"
 import { Button } from "@/components/ui/button"
-import { tenants } from "@/lib/mock-data"
-import { getCreatedTenantsFromStorage, mergeTenants } from "@/lib/tenant-storage"
+import { useResolvedTenants } from "@/hooks/use-resolved-tenant"
 
 export default function AdminTenantsPage() {
   const router = useRouter()
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
-  const [createdTenants, setCreatedTenants] = React.useState(getCreatedTenantsFromStorage())
+  const allTenants = useResolvedTenants()
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setIsCreateOpen(params.get("create") === "1")
-    setCreatedTenants(getCreatedTenantsFromStorage())
   }, [])
-
-  const allTenants = React.useMemo(
-    () => mergeTenants(tenants, createdTenants),
-    [createdTenants]
-  )
 
   function handleCreateModalOpenChange(open: boolean) {
     setIsCreateOpen(open)
@@ -67,7 +60,6 @@ export default function AdminTenantsPage() {
         open={isCreateOpen}
         onOpenChange={handleCreateModalOpenChange}
         existingTenants={allTenants}
-        onTenantCreated={() => setCreatedTenants(getCreatedTenantsFromStorage())}
       />
     </section>
   )

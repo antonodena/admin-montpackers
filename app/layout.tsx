@@ -7,12 +7,12 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 })
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
   subsets: ["latin"],
 })
 
@@ -27,8 +27,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" dir="ltr">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html
+      lang="es"
+      dir="ltr"
+      className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+    >
+      <body>
         <DirectionProvider direction="ltr">
           <TooltipProvider>{children}</TooltipProvider>
         </DirectionProvider>

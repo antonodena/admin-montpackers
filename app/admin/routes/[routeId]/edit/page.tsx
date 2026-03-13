@@ -11,23 +11,7 @@ import { getRouteById } from "@/lib/route-storage"
 export default function EditRoutePage() {
   const params = useParams<{ routeId: string }>()
   const routeId = params.routeId
-
-  const [isReady, setIsReady] = React.useState(false)
-  const [routeName, setRouteName] = React.useState("")
-
-  React.useEffect(() => {
-    const route = getRouteById(routeId)
-    setRouteName(route?.name ?? "")
-    setIsReady(true)
-  }, [routeId])
-
-  if (!isReady) {
-    return (
-      <section className="rounded-xl border bg-card p-5">
-        <p className="text-sm text-muted-foreground">Cargando ruta...</p>
-      </section>
-    )
-  }
+  const routeName = React.useMemo(() => getRouteById(routeId)?.name ?? "", [routeId])
 
   if (!routeName) {
     return (

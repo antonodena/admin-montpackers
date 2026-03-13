@@ -31,10 +31,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { tenants } from "@/lib/mock-data"
+import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
 import type { RouteLibraryItem } from "@/lib/routes-data"
 import { getTenantRoutes } from "@/lib/route-storage"
-import { getCreatedTenantsFromStorage, mergeTenants } from "@/lib/tenant-storage"
 
 function formatDuration(durationMin: number) {
   const hours = Math.floor(durationMin / 60)
@@ -140,34 +139,13 @@ export default function TenantRoutesPage() {
   const params = useParams<{ tenantSlug: string }>()
   const tenantSlug = params.tenantSlug
 
-  const [createdTenants, setCreatedTenants] = React.useState(getCreatedTenantsFromStorage())
-  const [tenantRoutes, setTenantRoutes] = React.useState<RouteLibraryItem[]>([])
+  const tenant = useResolvedTenant(tenantSlug)
+  const [tenantRoutes] = React.useState<RouteLibraryItem[]>(() =>
+    tenantSlug ? getTenantRoutes(tenantSlug) : []
+  )
   const [isAddRouteChoiceOpen, setIsAddRouteChoiceOpen] = React.useState(false)
 
-  React.useEffect(() => {
-    setCreatedTenants(getCreatedTenantsFromStorage())
-  }, [])
-
-  const allTenants = React.useMemo(
-    () => mergeTenants(tenants, createdTenants),
-    [createdTenants]
-  )
-
-  const tenant = allTenants.find((item) => item.slug === tenantSlug)
-
   const columns = React.useMemo(() => buildColumns(), [])
-
-  const refreshRoutes = React.useCallback(() => {
-    if (!tenantSlug) {
-      return
-    }
-
-    setTenantRoutes(getTenantRoutes(tenantSlug))
-  }, [tenantSlug])
-
-  React.useEffect(() => {
-    refreshRoutes()
-  }, [refreshRoutes])
 
   if (!tenant) {
     return (

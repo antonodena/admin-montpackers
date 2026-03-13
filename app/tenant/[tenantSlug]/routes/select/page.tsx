@@ -5,6 +5,7 @@ import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { CreateRouteAction } from "@/components/routes/create-route-action"
 import { RouteLibraryTable } from "@/components/routes/route-library-table"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,9 +23,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { tenants } from "@/lib/mock-data"
+import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
 import { getAllRoutes, assignRoutesToTenant, getTenantRoutes } from "@/lib/route-storage"
-import { getCreatedTenantsFromStorage, mergeTenants } from "@/lib/tenant-storage"
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values))
@@ -35,34 +35,17 @@ export default function TenantSelectLibraryRoutesPage() {
   const params = useParams<{ tenantSlug: string }>()
   const tenantSlug = params.tenantSlug
 
-  const [createdTenants, setCreatedTenants] = React.useState(getCreatedTenantsFromStorage())
-  const [allRoutes, setAllRoutes] = React.useState(() => getAllRoutes())
-  const [assignedRouteIds, setAssignedRouteIds] = React.useState<string[]>([])
+  const tenant = useResolvedTenant(tenantSlug)
+  const allRoutes = React.useMemo(() => getAllRoutes(), [])
+  const assignedRouteIds = React.useMemo(
+    () => (tenantSlug ? getTenantRoutes(tenantSlug).map((route) => route.id) : []),
+    [tenantSlug]
+  )
   const [selectedRouteIds, setSelectedRouteIds] = React.useState<string[]>([])
   const [filteredRouteIds, setFilteredRouteIds] = React.useState<string[]>([])
   const [searchText, setSearchText] = React.useState("")
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-
-  React.useEffect(() => {
-    setCreatedTenants(getCreatedTenantsFromStorage())
-  }, [])
-
-  const allTenants = React.useMemo(
-    () => mergeTenants(tenants, createdTenants),
-    [createdTenants]
-  )
-
-  const tenant = allTenants.find((item) => item.slug === tenantSlug)
-
-  React.useEffect(() => {
-    if (!tenantSlug) {
-      return
-    }
-
-    setAllRoutes(getAllRoutes())
-    setAssignedRouteIds(getTenantRoutes(tenantSlug).map((route) => route.id))
-  }, [tenantSlug])
 
   React.useEffect(() => {
     if (assignedRouteIds.length === 0) {
@@ -212,6 +195,7 @@ export default function TenantSelectLibraryRoutesPage() {
               emptyMessage="No hay rutas disponibles para añadir con los filtros actuales."
               filterDialogTitle="Filtros de biblioteca"
               filterDialogDescription="Filtra rutas para seleccionar las que quieras añadir al tenant."
+              toolbarAction={<CreateRouteAction href={`/tenant/${tenant.slug}/routes/new`} />}
             />
 
             {submitError && <p className="mt-3 text-sm text-destructive">{submitError}</p>}

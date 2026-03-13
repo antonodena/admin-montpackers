@@ -16,29 +16,25 @@ import {
 import { Input } from "@/components/ui/input"
 import type { Tenant } from "@/lib/mock-data"
 import {
+  DEFAULT_TENANT_BRAND_COLOR,
+  fileToDataUrl,
+  getTenantAssetAccept,
+  getTenantBrandColor,
+  normalizeTenantBrandColorInput,
+  type TenantAssetTarget,
+  validateTenantAssetFile,
+  validateTenantName,
+} from "@/lib/tenant-form"
+import {
   buildTenantUrl,
   isSlugAvailable,
   isSlugFormatValid,
   isValidHexColor,
   sanitizeSlug,
-  saveCreatedTenant,
   slugifyHotelName,
+  upsertStoredTenant,
 } from "@/lib/tenant-storage"
 import { cn } from "@/lib/utils"
-
-const LOGO_MAX_SIZE = 2 * 1024 * 1024
-const FAVICON_MAX_SIZE = 512 * 1024
-
-const LOGO_ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "svg"]
-const FAVICON_ALLOWED_EXTENSIONS = ["ico", "png", "svg"]
-
-const LOGO_ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/svg+xml"]
-const FAVICON_ALLOWED_MIME_TYPES = [
-  "image/png",
-  "image/svg+xml",
-  "image/x-icon",
-  "image/vnd.microsoft.icon",
-]
 
 const ONBOARDING_STEPS = [
   { title: "Identidad", description: "Datos base del tenant" },
@@ -47,64 +43,11 @@ const ONBOARDING_STEPS = [
 
 type Step = 0 | 1
 
-type UploadTarget = "logo" | "favicon"
-
 type CreateTenantModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   existingTenants: Tenant[]
   onTenantCreated?: (tenant: Tenant) => void
-}
-
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result ?? ""))
-    reader.onerror = () => reject(new Error("No se ha podido leer el archivo"))
-    reader.readAsDataURL(file)
-  })
-}
-
-function getFileExtension(fileName: string) {
-  return fileName.split(".").pop()?.toLowerCase() ?? ""
-}
-
-function isMimeAllowed(fileType: string, allowedMimeTypes: string[]) {
-  return fileType.length === 0 || allowedMimeTypes.includes(fileType)
-}
-
-function validateAssetFile(target: UploadTarget, file: File) {
-  const extension = getFileExtension(file.name)
-
-  if (target === "logo") {
-    if (!LOGO_ALLOWED_EXTENSIONS.includes(extension)) {
-      return "El logo debe ser PNG, JPG, JPEG o SVG."
-    }
-
-    if (!isMimeAllowed(file.type, LOGO_ALLOWED_MIME_TYPES)) {
-      return "Formato MIME de logo no válido."
-    }
-
-    if (file.size > LOGO_MAX_SIZE) {
-      return "El logo supera 2MB."
-    }
-
-    return null
-  }
-
-  if (!FAVICON_ALLOWED_EXTENSIONS.includes(extension)) {
-    return "El favicon debe ser ICO, PNG o SVG."
-  }
-
-  if (!isMimeAllowed(file.type, FAVICON_ALLOWED_MIME_TYPES)) {
-    return "Formato MIME de favicon no válido."
-  }
-
-  if (file.size > FAVICON_MAX_SIZE) {
-    return "El favicon supera 512KB."
-  }
-
-  return null
 }
 
 function initialState() {
@@ -119,7 +62,7 @@ function initialState() {
     faviconDataUrl: "",
     faviconFileName: "",
     faviconError: "",
-    brandColor: "#9F1239",
+    brandColor: DEFAULT_TENANT_BRAND_COLOR,
     isSubmitting: false,
     submitError: "",
   }
@@ -150,7 +93,10 @@ export function CreateTenantModal({
     normalizedSlug.length > 0 && isSlugAvailable(normalizedSlug, existingTenants)
 
   const identityStepValid =
-    normalizedName.length > 1 && isSlugValid && slugAvailable && normalizedSlug === state.slug
+    validateTenantName(state.hotelName) === null &&
+    isSlugValid &&
+    slugAvailable &&
+    normalizedSlug === state.slug
 
   const brandingStepValid =
     state.logoDataUrl.length > 0 &&
@@ -158,7 +104,7 @@ export function CreateTenantModal({
     isValidHexColor(state.brandColor)
 
   const canContinue = state.step === 0 ? identityStepValid : brandingStepValid
-  const displayColor = isValidHexColor(state.brandColor) ? state.brandColor : "#9F1239"
+  const displayColor = getTenantBrandColor(state.brandColor)
 
   function handleHotelNameChange(value: string) {
     setState((current) => ({
@@ -177,21 +123,20 @@ export function CreateTenantModal({
   }
 
   function handleColorTextChange(value: string) {
-    const withHash = value.startsWith("#") ? value : `#${value}`
-    const next = withHash.toUpperCase()
+    const next = normalizeTenantBrandColorInput(value)
 
-    if (/^#[0-9A-F]{0,6}$/.test(next)) {
+    if (next !== null) {
       setState((current) => ({ ...current, brandColor: next }))
     }
   }
 
-  async function handleAssetUpload(target: UploadTarget, fileList: FileList | null) {
+  async function handleAssetUpload(target: TenantAssetTarget, fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
       return
     }
 
     const file = fileList[0]
-    const validationError = validateAssetFile(target, file)
+    const validationError = validateTenantAssetFile(target, file)
 
     if (validationError) {
       setState((current) =>
@@ -248,7 +193,7 @@ export function CreateTenantModal({
         brandColor: displayColor,
       }
 
-      saveCreatedTenant(tenant)
+      upsertStoredTenant(tenant)
       onTenantCreated?.(tenant)
       router.push(`/tenant/${tenant.slug}`)
       router.refresh()
@@ -362,7 +307,7 @@ export function CreateTenantModal({
                 <Input
                   id="logo"
                   type="file"
-                  accept=".png,.jpg,.jpeg,.svg"
+                  accept={getTenantAssetAccept("logo")}
                   onChange={(event) => handleAssetUpload("logo", event.target.files)}
                 />
                 <p className="text-xs text-muted-foreground">PNG/JPG/JPEG/SVG · máximo 2MB</p>
@@ -377,7 +322,7 @@ export function CreateTenantModal({
                 <Input
                   id="favicon"
                   type="file"
-                  accept=".ico,.png,.svg"
+                  accept={getTenantAssetAccept("favicon")}
                   onChange={(event) => handleAssetUpload("favicon", event.target.files)}
                 />
                 <p className="text-xs text-muted-foreground">ICO/PNG/SVG · máximo 512KB</p>

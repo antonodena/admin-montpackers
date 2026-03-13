@@ -1,9 +1,8 @@
 "use client"
 
-import Link from "next/link"
 import * as React from "react"
-import { Plus } from "lucide-react"
 
+import { CreateRouteAction } from "@/components/routes/create-route-action"
 import { RouteLibraryTable } from "@/components/routes/route-library-table"
 import {
   AlertDialog,
@@ -15,17 +14,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 import type { RouteLibraryItem } from "@/lib/routes-data"
 import { getAllRoutes } from "@/lib/route-storage"
 
 export default function AdminRoutesPage() {
   const [routes, setRoutes] = React.useState<RouteLibraryItem[]>(() => getAllRoutes())
   const [routeToDelete, setRouteToDelete] = React.useState<RouteLibraryItem | null>(null)
-
-  React.useEffect(() => {
-    setRoutes(getAllRoutes())
-  }, [])
 
   function handleDeleteRoute() {
     if (!routeToDelete) {
@@ -49,14 +43,7 @@ export default function AdminRoutesPage() {
         routes={routes}
         mode="browse"
         onRequestDeleteRoute={setRouteToDelete}
-        toolbarAction={
-          <Button asChild>
-            <Link href="/admin/routes/new">
-              <Plus className="size-4" />
-              Crear ruta
-            </Link>
-          </Button>
-        }
+        toolbarAction={<CreateRouteAction href="/admin/routes/new" />}
       />
 
       <AlertDialog

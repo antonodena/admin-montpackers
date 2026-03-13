@@ -26,25 +26,7 @@ function formatDuration(durationMin: number) {
 export default function RouteDetailPage() {
   const params = useParams<{ routeId: string }>()
   const routeId = params.routeId
-
-  const [isReady, setIsReady] = React.useState(false)
-  const [routeName, setRouteName] = React.useState("")
-  const [routeData, setRouteData] = React.useState(() => getRouteById(routeId))
-
-  React.useEffect(() => {
-    const route = getRouteById(routeId)
-    setRouteData(route)
-    setRouteName(route?.name ?? "")
-    setIsReady(true)
-  }, [routeId])
-
-  if (!isReady) {
-    return (
-      <section className="rounded-xl border bg-card p-5">
-        <p className="text-sm text-muted-foreground">Cargando ruta...</p>
-      </section>
-    )
-  }
+  const routeData = React.useMemo(() => getRouteById(routeId), [routeId])
 
   if (!routeData) {
     return (
@@ -76,17 +58,23 @@ export default function RouteDetailPage() {
           />
         </div>
         <div className="p-5">
-          <h1 className="text-xl font-semibold">{routeName}</h1>
+          <h1 className="text-xl font-semibold">{routeData.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {routeData.region} · {routeData.sport} · {routeData.difficulty}
+            {routeData.routeCode} · {routeData.region} · {routeData.sport} · {routeData.difficulty}
           </p>
+          {routeData.description && (
+            <p className="mt-3 text-sm text-muted-foreground">{routeData.description}</p>
+          )}
           <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
             <p>Tenants relacionados: {routeData.tenantCount}</p>
             <p>Distancia: {routeData.distanceKm.toFixed(1)} km</p>
             <p>Desnivel: {routeData.elevationGainM} m</p>
             <p>Duración: {formatDuration(routeData.durationMin)}</p>
             <p>Circular: {routeData.isCircular ? "Sí" : "No"}</p>
+            <p>Iniciación: {routeData.isBeginnerFriendly ? "Sí" : "No"}</p>
             <p>Familiar: {routeData.isFamilyFriendly ? "Sí" : "No"}</p>
+            <p>Orientación: {routeData.orientation}</p>
+            <p>Dirección: {routeData.direction}</p>
             <p>Autor: {routeData.author}</p>
           </div>
 

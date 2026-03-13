@@ -17,7 +17,34 @@ export type RouteSport =
 
 export type RouteDifficulty = "Fácil" | "Moderada" | "Difícil"
 
-export type RouteLibraryItem = {
+export type RouteAssetType = "vista" | "waypoint" | "alerta" | "habituallamiento"
+
+export type RouteOrientation = "N" | "NE" | "E" | "SE" | "S" | "SO" | "O" | "NO"
+
+export type RouteDirection = "Subida" | "Bajada"
+
+export type RouteAsset = {
+  id: string
+  dataUrl: string
+  fileName: string
+  mimeType: string
+  kind: RouteAssetType
+}
+
+export type RouteGpxFile = {
+  fileName: string
+  mimeType: string
+  sizeBytes: number
+  content: string
+}
+
+export type RouteGpxMetrics = {
+  distanceKm: number | null
+  elevationGainM: number | null
+  durationMin: number | null
+}
+
+export type LegacyRouteLibraryItem = {
   id: string
   coverImageUrl: string
   name: string
@@ -31,6 +58,17 @@ export type RouteLibraryItem = {
   elevationGainM: number
   durationMin: number
   author: string
+}
+
+export type RouteLibraryItem = LegacyRouteLibraryItem & {
+  routeCode: string
+  description: string
+  isBeginnerFriendly: boolean
+  orientation: RouteOrientation
+  direction: RouteDirection
+  assets: RouteAsset[]
+  gpxFile: RouteGpxFile | null
+  gpxMetrics: RouteGpxMetrics | null
 }
 
 export const ROUTE_REGIONS: RouteRegion[] = [
@@ -54,6 +92,26 @@ export const ROUTE_SPORTS: RouteSport[] = [
 
 export const ROUTE_DIFFICULTIES: RouteDifficulty[] = ["Fácil", "Moderada", "Difícil"]
 
+export const ROUTE_ASSET_TYPES: RouteAssetType[] = [
+  "vista",
+  "waypoint",
+  "alerta",
+  "habituallamiento",
+]
+
+export const ROUTE_ORIENTATIONS: RouteOrientation[] = [
+  "N",
+  "NE",
+  "E",
+  "SE",
+  "S",
+  "SO",
+  "O",
+  "NO",
+]
+
+export const ROUTE_DIRECTIONS: RouteDirection[] = ["Subida", "Bajada"]
+
 export const ROUTE_AUTHORS = [
   "Anton Òdena",
   "Marta Soler",
@@ -65,7 +123,7 @@ export const ROUTE_AUTHORS = [
   "Carla Vidal",
 ]
 
-export const routeLibrarySeed: RouteLibraryItem[] = [
+export const routeLibrarySeed: LegacyRouteLibraryItem[] = [
   {
     id: "route_001",
     coverImageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=320&q=80",
