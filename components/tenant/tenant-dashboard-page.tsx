@@ -1,6 +1,7 @@
 "use client"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { PageSectionCard } from "@/components/shared/page-section-card"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,12 +16,21 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Tenant } from "@/lib/mock-data"
 
 const stats = [
   { title: "Visitantes hoy", value: "2.154", detail: "+12.4%" },
   { title: "Eventos activos", value: "18", detail: "3 pendientes" },
   { title: "Kioskos online", value: "24/26", detail: "2 desconectados" },
+]
+
+const recentActivity = [
+  "Ruta urbana A7 actualizada",
+  "Nuevo evento en recepción",
+  "Kiosko Hall sincronizado",
+  "Instalación Norte en revisión",
 ]
 
 type TenantDashboardPageProps = {
@@ -51,30 +61,36 @@ export function TenantDashboardPage({ tenant }: TenantDashboardPageProps) {
         <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <section className="grid gap-4 md:grid-cols-3">
             {stats.map((stat) => (
-              <article key={stat.title} className="rounded-xl border bg-card p-4">
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-                <p className="mt-2 text-3xl font-semibold tracking-tight">{stat.value}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{stat.detail}</p>
-              </article>
+              <Card key={stat.title}>
+                <CardHeader className="gap-1">
+                  <CardDescription>{stat.title}</CardDescription>
+                  <CardTitle className="text-3xl tracking-tight">{stat.value}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Badge variant="secondary">{stat.detail}</Badge>
+                </CardContent>
+              </Card>
             ))}
           </section>
 
-          <section className="rounded-xl border bg-card p-5">
-            <h2 className="text-lg font-semibold">Actividad reciente</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Vista principal del panel de {tenant.name}. Puedes conectar aquí tus módulos
-              de rutas, eventos, instalaciones y kioskos.
-            </p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg bg-muted p-4 text-sm">Ruta urbana A7 actualizada</div>
-              <div className="rounded-lg bg-muted p-4 text-sm">Nuevo evento en recepción</div>
-              <div className="rounded-lg bg-muted p-4 text-sm">Kiosko Hall sincronizado</div>
-              <div className="rounded-lg bg-muted p-4 text-sm">Instalación Norte en revisión</div>
+          <PageSectionCard
+            title="Actividad reciente"
+            description={`Vista principal del panel de ${tenant.name}. Puedes conectar aquí tus módulos de rutas, eventos, instalaciones y kioskos.`}
+            contentClassName="flex flex-col gap-6"
+          >
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {recentActivity.map((item) => (
+                <Card key={item} className="gap-0 py-0">
+                  <CardContent className="p-4 text-sm">{item}</CardContent>
+                </Card>
+              ))}
             </div>
-            <div className="mt-6 rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">
+            <Card className="gap-0 bg-muted/40">
+              <CardContent className="p-4 text-sm text-muted-foreground">
               Site URL del tenant: <span className="font-medium text-foreground">{tenant.siteUrl}</span>
-            </div>
-          </section>
+              </CardContent>
+            </Card>
+          </PageSectionCard>
         </main>
       </SidebarInset>
     </SidebarProvider>

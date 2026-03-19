@@ -14,6 +14,7 @@ import {
 import { Eye, Filter, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { ColumnHeader } from "@/components/admin/column-header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,6 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Pagination,
@@ -53,8 +55,17 @@ import {
 import { POI_TYPES, type PoiLibraryItem, type PoiType } from "@/lib/poi-storage"
 import { cn } from "@/lib/utils"
 
+type PoiLibraryTableMode = "browse" | "select"
+
 type PoiLibraryTableProps = {
   pois: PoiLibraryItem[]
+  mode?: PoiLibraryTableMode
+  excludedPoiIds?: string[]
+  selectedPoiIds?: string[]
+  onSelectedPoiIdsChange?: (next: string[]) => void
+  onFilteredPoiIdsChange?: (ids: string[]) => void
+  searchText?: string
+  onSearchTextChange?: (value: string) => void
   onRequestDeletePoi?: (poi: PoiLibraryItem) => void
   toolbarAction?: React.ReactNode
   emptyMessage?: string
@@ -121,7 +132,15 @@ function includesOrAll<T>(selected: T[], current: T) {
   return selected.includes(current)
 }
 
-function getColumnResponsiveClass(columnId: string) {
+function getColumnResponsiveClass(mode: PoiLibraryTableMode, columnId: string) {
+  if (columnId === "select" && mode === "select") {
+    return ""
+  }
+
+  if (mode === "browse" && columnId === "actions") {
+    return ""
+  }
+
   switch (columnId) {
     case "coverImageUrl":
       return "hidden lg:table-cell"
@@ -132,8 +151,66 @@ function getColumnResponsiveClass(columnId: string) {
   }
 }
 
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values))
+}
+
+function FilterSummaryBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className="font-normal">
+      {children}
+    </Badge>
+  )
+}
+
+function FilterCountBadge({ count }: { count: number }) {
+  return (
+    <Badge variant="secondary" className="pointer-events-none">
+      {count}
+    </Badge>
+  )
+}
+
+function TableActionTrigger() {
+  return (
+    <Button variant="ghost" size="icon-sm">
+      <span className="sr-only">Abrir menú</span>
+      <MoreHorizontal />
+    </Button>
+  )
+}
+
+function FilterSearchField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="poi-search-filter">Buscar por nombre, tipo o subtipo</FieldLabel>
+      <FieldContent>
+        <Input
+          id="poi-search-filter"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Ej: Mirador, hotel boutique, restaurante..."
+        />
+      </FieldContent>
+    </Field>
+  )
+}
+
 export function PoiLibraryTable({
   pois,
+  mode = "browse",
+  excludedPoiIds = [],
+  selectedPoiIds,
+  onSelectedPoiIdsChange,
+  onFilteredPoiIdsChange,
+  searchText,
+  onSearchTextChange,
   onRequestDeletePoi,
   toolbarAction,
   emptyMessage = "Sin POIs para los filtros seleccionados.",
@@ -141,14 +218,53 @@ export function PoiLibraryTable({
   filterDialogDescription = "Busca y filtra POIs por categoría y términos editoriales.",
 }: PoiLibraryTableProps) {
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = React.useState(false)
-  const [searchText, setSearchText] = React.useState("")
+  const [internalSelectedPoiIds, setInternalSelectedPoiIds] = React.useState<string[]>([])
+  const [internalSearchText, setInternalSearchText] = React.useState("")
   const [selectedTypes, setSelectedTypes] = React.useState<PoiType[]>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
 
-  const filteredPois = React.useMemo(() => {
-    const query = searchText.trim().toLowerCase()
+  const usesExternalSearchControl =
+    typeof searchText === "string" || typeof onSearchTextChange === "function"
 
-    return pois.filter((poi) => {
+  const effectiveSearchText = searchText ?? internalSearchText
+
+  const setEffectiveSearchText = React.useCallback(
+    (next: string) => {
+      if (onSearchTextChange) {
+        onSearchTextChange(next)
+        return
+      }
+
+      setInternalSearchText(next)
+    },
+    [onSearchTextChange]
+  )
+
+  const effectiveSelectedPoiIds = selectedPoiIds ?? internalSelectedPoiIds
+
+  const setEffectiveSelectedPoiIds = React.useCallback(
+    (next: string[]) => {
+      if (onSelectedPoiIdsChange) {
+        onSelectedPoiIdsChange(next)
+        return
+      }
+
+      setInternalSelectedPoiIds(next)
+    },
+    [onSelectedPoiIdsChange]
+  )
+
+  const excludedPoiIdSet = React.useMemo(() => new Set(excludedPoiIds), [excludedPoiIds])
+
+  const visiblePois = React.useMemo(
+    () => pois.filter((poi) => !excludedPoiIdSet.has(poi.id)),
+    [pois, excludedPoiIdSet]
+  )
+
+  const filteredPois = React.useMemo(() => {
+    const query = effectiveSearchText.trim().toLowerCase()
+
+    return visiblePois.filter((poi) => {
       const matchesSearch =
         query.length === 0 ||
         poi.name.toLowerCase().includes(query) ||
@@ -159,10 +275,46 @@ export function PoiLibraryTable({
 
       return matchesSearch && matchesType
     })
-  }, [pois, searchText, selectedTypes])
+  }, [visiblePois, effectiveSearchText, selectedTypes])
 
-  const columns = React.useMemo<ColumnDef<PoiLibraryItem>[]>(
-    () => [
+  React.useEffect(() => {
+    onFilteredPoiIdsChange?.(filteredPois.map((poi) => poi.id))
+  }, [filteredPois, onFilteredPoiIdsChange])
+
+  const columns = React.useMemo<ColumnDef<PoiLibraryItem>[]>(() => {
+    const baseColumns: ColumnDef<PoiLibraryItem>[] = []
+
+    if (mode === "select") {
+      baseColumns.push({
+        id: "select",
+        header: "",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const checked = effectiveSelectedPoiIds.includes(row.original.id)
+
+          return (
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => {
+                if (checked) {
+                  setEffectiveSelectedPoiIds(
+                    effectiveSelectedPoiIds.filter((item) => item !== row.original.id)
+                  )
+                } else {
+                  setEffectiveSelectedPoiIds(
+                    uniqueStrings([...effectiveSelectedPoiIds, row.original.id])
+                  )
+                }
+              }}
+              aria-label={`Seleccionar POI ${row.original.name}`}
+            />
+          )
+        },
+      })
+    }
+
+    baseColumns.push(
       {
         accessorKey: "coverImageUrl",
         header: "Portada",
@@ -198,18 +350,18 @@ export function PoiLibraryTable({
             {row.original.subtype}
           </span>
         ),
-      },
-      {
+      }
+    )
+
+    if (mode === "browse") {
+      baseColumns.push({
         id: "actions",
         header: "Acciones",
         enableSorting: false,
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Abrir menú</span>
-                <MoreHorizontal className="size-4" />
-              </Button>
+              <TableActionTrigger />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
@@ -242,10 +394,11 @@ export function PoiLibraryTable({
             </DropdownMenuContent>
           </DropdownMenu>
         ),
-      },
-    ],
-    [onRequestDeletePoi]
-  )
+      })
+    }
+
+    return baseColumns
+  }, [mode, effectiveSelectedPoiIds, onRequestDeletePoi, setEffectiveSelectedPoiIds])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -265,16 +418,26 @@ export function PoiLibraryTable({
 
   React.useEffect(() => {
     table.setPageIndex(0)
-  }, [searchText, selectedTypes, table])
+  }, [effectiveSearchText, selectedTypes, table])
+
+  React.useEffect(() => {
+    if (mode === "select" && excludedPoiIds.length > 0 && effectiveSelectedPoiIds.length > 0) {
+      const excludedSet = new Set(excludedPoiIds)
+      const next = effectiveSelectedPoiIds.filter((poiId) => !excludedSet.has(poiId))
+      if (next.length !== effectiveSelectedPoiIds.length) {
+        setEffectiveSelectedPoiIds(next)
+      }
+    }
+  }, [mode, excludedPoiIds, effectiveSelectedPoiIds, setEffectiveSelectedPoiIds])
 
   const pageCount = table.getPageCount()
   const currentPage = table.getState().pagination.pageIndex
 
-  const hasActiveFilters = searchText.trim().length > 0 || selectedTypes.length > 0
+  const hasActiveFilters = effectiveSearchText.trim().length > 0 || selectedTypes.length > 0
 
   const appliedFilterLabels = React.useMemo(() => {
     const labels: string[] = []
-    const query = searchText.trim()
+    const query = effectiveSearchText.trim()
 
     if (query.length > 0) {
       labels.push(`Búsqueda: ${query}`)
@@ -285,27 +448,25 @@ export function PoiLibraryTable({
     }
 
     return labels
-  }, [searchText, selectedTypes])
+  }, [effectiveSearchText, selectedTypes])
 
   function clearAllFilters() {
-    setSearchText("")
+    setEffectiveSearchText("")
     setSelectedTypes([])
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           onClick={() => setIsFiltersDialogOpen(true)}
           className="justify-start"
         >
-          <Filter className="size-4" />
+          <Filter data-icon="inline-start" />
           Filtros
           {appliedFilterLabels.length > 0 && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              {appliedFilterLabels.length}
-            </span>
+            <FilterCountBadge count={appliedFilterLabels.length} />
           )}
         </Button>
 
@@ -320,27 +481,24 @@ export function PoiLibraryTable({
         <span className="text-xs font-medium text-muted-foreground">Filtros aplicados</span>
         {appliedFilterLabels.length > 0 ? (
           appliedFilterLabels.map((label, index) => (
-            <span
-              key={`${label}-${index}`}
-              className="inline-flex items-center rounded-md border bg-muted px-2 py-1 text-xs"
-            >
+            <FilterSummaryBadge key={`${label}-${index}`}>
               {label}
-            </span>
+            </FilterSummaryBadge>
           ))
         ) : (
           <span className="text-xs text-muted-foreground">Ninguno</span>
         )}
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="min-w-0 rounded-md border">
+        <Table containerClassName="overflow-hidden" className="table-fixed w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className={cn(getColumnResponsiveClass(header.column.id))}
+                    className={cn(getColumnResponsiveClass(mode, header.column.id))}
                   >
                     {header.isPlaceholder
                       ? null
@@ -360,7 +518,7 @@ export function PoiLibraryTable({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={cn(getColumnResponsiveClass(cell.column.id))}
+                      className={cn(getColumnResponsiveClass(mode, cell.column.id))}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -433,18 +591,10 @@ export function PoiLibraryTable({
             <DialogDescription>{filterDialogDescription}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="poi-search-filter">
-                Buscar por nombre, tipo o subtipo
-              </label>
-              <Input
-                id="poi-search-filter"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Ej: Mirador, hotel boutique, restaurante..."
-              />
-            </div>
+          <div className="flex flex-col gap-4">
+            {!usesExternalSearchControl && (
+              <FilterSearchField value={effectiveSearchText} onChange={setEffectiveSearchText} />
+            )}
 
             <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
               <MultiSelectFilter

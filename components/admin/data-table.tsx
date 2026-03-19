@@ -78,7 +78,7 @@ export function DataTable<TData, TValue>({
   const currentPage = table.getState().pagination.pageIndex
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <Input
           placeholder={filterPlaceholder}

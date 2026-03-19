@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { CreateRouteAction } from "@/components/routes/create-route-action"
+import { PageSectionCard } from "@/components/shared/page-section-card"
 import { RouteLibraryTable } from "@/components/routes/route-library-table"
 import {
   AlertDialog,
@@ -31,14 +32,10 @@ export default function AdminRoutesPage() {
   }
 
   return (
-    <section className="min-w-0 rounded-xl border bg-card p-4 md:p-6">
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold">Biblioteca de rutas</h1>
-        <p className="text-sm text-muted-foreground">
-          Listado global de rutas con filtros avanzados para gestión editorial.
-        </p>
-      </div>
-
+    <PageSectionCard
+      title="Biblioteca de rutas"
+      description="Listado global de rutas con filtros avanzados para gestión editorial."
+    >
       <RouteLibraryTable
         routes={routes}
         mode="browse"
@@ -70,6 +67,6 @@ export default function AdminRoutesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </PageSectionCard>
   )
 }

@@ -14,7 +14,9 @@ import {
 import { Eye, Filter, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { ColumnHeader } from "@/components/admin/column-header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogClose,
@@ -33,6 +35,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Pagination,
@@ -159,27 +162,76 @@ function RangeFilter({
   onChange,
 }: RangeFilterProps) {
   return (
-    <div className="space-y-2 rounded-lg border p-3">
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">
-          {value[0]}
-          {unit} - {value[1]}
-          {unit}
-        </span>
-      </div>
-      <Slider
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={(next) => {
-          if (next.length === 2) {
-            onChange([next[0], next[1]])
-          }
-        }}
-      />
-    </div>
+    <Card className="gap-0 py-0 shadow-none">
+      <CardContent className="flex flex-col gap-3 px-3 py-3">
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="font-medium">{label}</span>
+          <Badge variant="outline" className="font-normal text-muted-foreground">
+            {value[0]}
+            {unit} - {value[1]}
+            {unit}
+          </Badge>
+        </div>
+        <Slider
+          value={value}
+          min={min}
+          max={max}
+          step={step}
+          onValueChange={(next) => {
+            if (next.length === 2) {
+              onChange([next[0], next[1]])
+            }
+          }}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
+function FilterSummaryBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <Badge variant="outline" className="font-normal">
+      {children}
+    </Badge>
+  )
+}
+
+function FilterCountBadge({ count }: { count: number }) {
+  return (
+    <Badge variant="secondary" className="pointer-events-none">
+      {count}
+    </Badge>
+  )
+}
+
+function TableActionTrigger() {
+  return (
+    <Button variant="ghost" size="icon-sm">
+      <span className="sr-only">Abrir menú</span>
+      <MoreHorizontal />
+    </Button>
+  )
+}
+
+function FilterSearchField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="route-search-filter">Buscar por nombre o autor</FieldLabel>
+      <FieldContent>
+        <Input
+          id="route-search-filter"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Ej: Ruta del romanico, Marc Vidal..."
+        />
+      </FieldContent>
+    </Field>
   )
 }
 
@@ -497,10 +549,7 @@ export function RouteLibraryTable({
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Abrir menú</span>
-                <MoreHorizontal className="size-4" />
-              </Button>
+              <TableActionTrigger />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
@@ -682,19 +731,17 @@ export function RouteLibraryTable({
   }
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="min-w-0 flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           onClick={() => setIsFiltersDialogOpen(true)}
           className="justify-start"
         >
-          <Filter className="size-4" />
+          <Filter data-icon="inline-start" />
           Filtros
           {appliedFilterLabels.length > 0 && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              {appliedFilterLabels.length}
-            </span>
+            <FilterCountBadge count={appliedFilterLabels.length} />
           )}
         </Button>
 
@@ -709,12 +756,9 @@ export function RouteLibraryTable({
         <span className="text-xs font-medium text-muted-foreground">Filtros aplicados</span>
         {appliedFilterLabels.length > 0 ? (
           appliedFilterLabels.map((label, index) => (
-            <span
-              key={`${label}-${index}`}
-              className="inline-flex items-center rounded-md border bg-muted px-2 py-1 text-xs"
-            >
+            <FilterSummaryBadge key={`${label}-${index}`}>
               {label}
-            </span>
+            </FilterSummaryBadge>
           ))
         ) : (
           <span className="text-xs text-muted-foreground">Ninguno</span>
@@ -822,19 +866,12 @@ export function RouteLibraryTable({
             <DialogDescription>{filterDialogDescription}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {!usesExternalSearchControl && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="route-search-filter">
-                  Buscar por nombre o autor
-                </label>
-                <Input
-                  id="route-search-filter"
-                  value={effectiveSearchText}
-                  onChange={(event) => setEffectiveSearchText(event.target.value)}
-                  placeholder="Ej: Ruta del románico, Marc Vidal..."
-                />
-              </div>
+              <FilterSearchField
+                value={effectiveSearchText}
+                onChange={setEffectiveSearchText}
+              />
             )}
 
             <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">

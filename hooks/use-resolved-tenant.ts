@@ -9,13 +9,17 @@ import {
   STORED_TENANTS_UPDATED_EVENT,
 } from "@/lib/tenant-storage"
 
+function getInitialResolvedTenantsSnapshot() {
+  return mergeTenants(tenants, [])
+}
+
 function getResolvedTenantsSnapshot() {
   return mergeTenants(tenants, getStoredTenantsFromStorage())
 }
 
 export function useResolvedTenants() {
   const [resolvedTenants, setResolvedTenants] = React.useState<Tenant[]>(() =>
-    getResolvedTenantsSnapshot()
+    getInitialResolvedTenantsSnapshot()
   )
 
   React.useEffect(() => {
@@ -44,4 +48,3 @@ export function useResolvedTenant(tenantSlug?: string) {
     [resolvedTenants, tenantSlug]
   )
 }
-

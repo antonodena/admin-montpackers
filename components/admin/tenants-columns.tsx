@@ -32,7 +32,7 @@ export const tenantsColumns: ColumnDef<Tenant>[] = [
       const logoSrc = row.original.logoDataUrl ?? row.original.imageUrl
 
       return (
-        <Avatar className="h-8 w-8 rounded-lg">
+        <Avatar className="size-8 rounded-lg">
           <AvatarImage src={logoSrc} alt={row.original.name} />
           <AvatarFallback className="rounded-lg bg-muted text-xs">
             {initials(row.original.name)}
@@ -79,9 +79,9 @@ export const tenantsColumns: ColumnDef<Tenant>[] = [
     cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
+          <Button variant="ghost" size="icon-sm">
             <span className="sr-only">Abrir menú</span>
-            <MoreHorizontal className="size-4" />
+            <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

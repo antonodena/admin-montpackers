@@ -1,10 +1,10 @@
 "use client"
 
-import Link from "next/link"
 import * as React from "react"
-import { Plus } from "lucide-react"
 
+import { CreatePoiAction } from "@/components/pois/create-poi-action"
 import { PoiLibraryTable } from "@/components/pois/poi-library-table"
+import { PageSectionCard } from "@/components/shared/page-section-card"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 import type { PoiLibraryItem } from "@/lib/poi-storage"
 import { getAllPois } from "@/lib/poi-storage"
 
@@ -37,25 +36,14 @@ export default function AdminPoisPage() {
   }
 
   return (
-    <section className="rounded-xl border bg-card p-4 md:p-6">
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold">Biblioteca de POIs</h1>
-        <p className="text-sm text-muted-foreground">
-          Listado global de POIs con filtros avanzados para gestión editorial.
-        </p>
-      </div>
-
+    <PageSectionCard
+      title="Biblioteca de POIs"
+      description="Listado global de POIs con filtros avanzados para gestión editorial."
+    >
       <PoiLibraryTable
         pois={pois}
         onRequestDeletePoi={setPoiToDelete}
-        toolbarAction={
-          <Button asChild>
-            <Link href="/admin/pois/new">
-              <Plus className="size-4" />
-              Crear POI
-            </Link>
-          </Button>
-        }
+        toolbarAction={<CreatePoiAction href="/admin/pois/new" />}
       />
 
       <AlertDialog
@@ -82,6 +70,6 @@ export default function AdminPoisPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </PageSectionCard>
   )
 }

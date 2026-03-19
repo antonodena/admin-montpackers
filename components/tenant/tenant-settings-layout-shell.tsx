@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname, useParams } from "next/navigation"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { PageMessageCard } from "@/components/shared/page-message-card"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,20 +46,22 @@ export function TenantSettingsLayoutShell({
 
   if (!tenant) {
     return (
-      <section className="m-6 rounded-xl border bg-card p-5">
-        <h1 className="text-lg font-semibold">Tenant no encontrado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          El tenant que intentas abrir no existe en esta instancia.
-        </p>
-        <div className="mt-4 flex gap-2">
-          <Button asChild>
-            <Link href="/admin/tenants">Volver a admin tenants</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/">Ir al tenant por defecto</Link>
-          </Button>
-        </div>
-      </section>
+      <PageMessageCard
+        title="Tenant no encontrado"
+        description="El tenant que intentas abrir no existe en esta instancia."
+        className="m-6"
+        action={
+          <>
+            <Button asChild>
+              <Link href="/admin/tenants">Volver a admin tenants</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/">Ir al tenant por defecto</Link>
+            </Button>
+          </>
+        }
+        footerClassName="flex flex-wrap gap-2"
+      />
     )
   }
 
@@ -97,4 +100,3 @@ export function TenantSettingsLayoutShell({
     </SidebarProvider>
   )
 }
-

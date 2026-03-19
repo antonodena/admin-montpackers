@@ -329,22 +329,24 @@ export function TenantAppearanceSettingsSection({ tenantSlug }: SectionProps) {
             </div>
           </div>
 
-          <div className="rounded-xl border bg-muted/20 p-4">
-            <p className="text-sm font-medium">Favicon</p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-xl border bg-background">
-                {faviconSrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={faviconSrc} alt="Favicon" className="size-6 object-contain" />
-                ) : (
-                  <Upload className="text-muted-foreground" />
-                )}
+          <Card className="gap-3 py-4 shadow-none">
+            <CardContent className="flex flex-col gap-3 px-4">
+              <p className="text-sm font-medium">Favicon</p>
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-xl border bg-background">
+                  {faviconSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={faviconSrc} alt="Favicon" className="size-6 object-contain" />
+                  ) : (
+                    <Upload className="text-muted-foreground" />
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Se usará en pestañas del navegador y accesos rápidos.
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Se usará en pestañas del navegador y accesos rápidos.
-              </p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </CardContent>
       </Card>
     </div>

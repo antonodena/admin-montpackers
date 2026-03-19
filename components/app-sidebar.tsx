@@ -84,9 +84,14 @@ export function AppSidebar({
   const resolvedTenant = useResolvedTenant(tenantSlug)
   const tenantBasePath = `/tenant/${tenantSlug}`
   const kioskBasePath = `${tenantBasePath}/kiosks`
+  const modulesBasePath = `${tenantBasePath}/modules`
+  const poisBasePath = `${tenantBasePath}/pois`
   const settingsBasePath = `${tenantBasePath}/settings`
   const isKioskSectionActive =
     pathname === kioskBasePath || pathname.startsWith(`${kioskBasePath}/`)
+  const isModulesSectionActive =
+    pathname === modulesBasePath || pathname.startsWith(`${modulesBasePath}/`)
+  const isPoisSectionActive = pathname === poisBasePath || pathname.startsWith(`${poisBasePath}/`)
   const isSettingsSectionActive =
     pathname === settingsBasePath || pathname.startsWith(`${settingsBasePath}/`)
 
@@ -144,12 +149,22 @@ export function AppSidebar({
         pathname === `${tenantBasePath}/routes` ||
         pathname.startsWith(`${tenantBasePath}/routes/`),
     },
-    { title: "Puntos de interés", icon: MapPin },
+    {
+      title: "Puntos de interés",
+      href: poisBasePath,
+      icon: MapPin,
+      isActive: isPoisSectionActive,
+    },
     { title: "Eventos", icon: CalendarDays },
     { title: "Instalaciones", icon: Smartphone },
     { title: "Navegación", icon: Navigation },
     { title: "Páginas verticales", icon: PanelsTopLeft },
-    { title: "Modulos", icon: Blocks },
+    {
+      title: "Módulos",
+      href: modulesBasePath,
+      icon: Blocks,
+      isActive: isModulesSectionActive,
+    },
     { title: "Kioskos", href: kioskBasePath, icon: Smartphone, isActive: isKioskSectionActive },
   ]
   const settingsMenu: MenuItem[] = [

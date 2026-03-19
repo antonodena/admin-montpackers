@@ -7,6 +7,7 @@ import { Plus } from "lucide-react"
 import { CreateTenantModal } from "@/components/admin/create-tenant-modal"
 import { DataTable } from "@/components/admin/data-table"
 import { tenantsColumns } from "@/components/admin/tenants-columns"
+import { PageSectionCard } from "@/components/shared/page-section-card"
 import { Button } from "@/components/ui/button"
 import { useResolvedTenants } from "@/hooks/use-resolved-tenant"
 
@@ -35,14 +36,10 @@ export default function AdminTenantsPage() {
   }
 
   return (
-    <section className="rounded-xl border bg-card p-4 md:p-6">
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold">Tenants</h1>
-        <p className="text-sm text-muted-foreground">
-          Gestión multi-tenant del panel de administración.
-        </p>
-      </div>
-
+    <PageSectionCard
+      title="Tenants"
+      description="Gestión multi-tenant del panel de administración."
+    >
       <DataTable
         columns={tenantsColumns}
         data={allTenants}
@@ -50,7 +47,7 @@ export default function AdminTenantsPage() {
         filterPlaceholder="Filtrar por tenant o site URL..."
         toolbarAction={
           <Button onClick={() => handleCreateModalOpenChange(true)}>
-            <Plus className="size-4" />
+            <Plus data-icon="inline-start" />
             Crear nuevo tenant
           </Button>
         }
@@ -61,6 +58,6 @@ export default function AdminTenantsPage() {
         onOpenChange={handleCreateModalOpenChange}
         existingTenants={allTenants}
       />
-    </section>
+    </PageSectionCard>
   )
 }

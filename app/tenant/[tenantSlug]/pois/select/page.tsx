@@ -5,10 +5,10 @@ import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { CreateRouteAction } from "@/components/routes/create-route-action"
+import { CreatePoiAction } from "@/components/pois/create-poi-action"
+import { PoiLibraryTable } from "@/components/pois/poi-library-table"
 import { PageMessageCard } from "@/components/shared/page-message-card"
 import { PageSectionCard } from "@/components/shared/page-section-card"
-import { RouteLibraryTable } from "@/components/routes/route-library-table"
 import { Button } from "@/components/ui/button"
 import {
   Breadcrumb,
@@ -26,59 +26,59 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
-import { getAllRoutes, assignRoutesToTenant, getTenantRoutes } from "@/lib/route-storage"
+import { assignPoisToTenant, getAllPois, getTenantPois } from "@/lib/poi-storage"
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values))
 }
 
-export default function TenantSelectLibraryRoutesPage() {
+export default function TenantSelectLibraryPoisPage() {
   const router = useRouter()
   const params = useParams<{ tenantSlug: string }>()
   const tenantSlug = params.tenantSlug
 
   const tenant = useResolvedTenant(tenantSlug)
-  const allRoutes = React.useMemo(() => getAllRoutes(), [])
-  const assignedRouteIds = React.useMemo(
-    () => (tenantSlug ? getTenantRoutes(tenantSlug).map((route) => route.id) : []),
+  const allPois = React.useMemo(() => getAllPois(), [])
+  const assignedPoiIds = React.useMemo(
+    () => (tenantSlug ? getTenantPois(tenantSlug).map((poi) => poi.id) : []),
     [tenantSlug]
   )
-  const [selectedRouteIds, setSelectedRouteIds] = React.useState<string[]>([])
-  const [filteredRouteIds, setFilteredRouteIds] = React.useState<string[]>([])
+  const [selectedPoiIds, setSelectedPoiIds] = React.useState<string[]>([])
+  const [filteredPoiIds, setFilteredPoiIds] = React.useState<string[]>([])
   const [searchText, setSearchText] = React.useState("")
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   React.useEffect(() => {
-    if (assignedRouteIds.length === 0) {
+    if (assignedPoiIds.length === 0) {
       return
     }
 
-    const assignedSet = new Set(assignedRouteIds)
-    setSelectedRouteIds((current) => current.filter((routeId) => !assignedSet.has(routeId)))
-  }, [assignedRouteIds])
+    const assignedSet = new Set(assignedPoiIds)
+    setSelectedPoiIds((current) => current.filter((poiId) => !assignedSet.has(poiId)))
+  }, [assignedPoiIds])
 
-  const selectedRouteSet = React.useMemo(() => new Set(selectedRouteIds), [selectedRouteIds])
+  const selectedPoiSet = React.useMemo(() => new Set(selectedPoiIds), [selectedPoiIds])
 
   const allFilteredSelected =
-    filteredRouteIds.length > 0 && filteredRouteIds.every((routeId) => selectedRouteSet.has(routeId))
+    filteredPoiIds.length > 0 && filteredPoiIds.every((poiId) => selectedPoiSet.has(poiId))
 
   function handleToggleSelectAllFiltered() {
-    if (filteredRouteIds.length === 0) {
+    if (filteredPoiIds.length === 0) {
       return
     }
 
     if (allFilteredSelected) {
-      const filteredSet = new Set(filteredRouteIds)
-      setSelectedRouteIds((current) => current.filter((routeId) => !filteredSet.has(routeId)))
+      const filteredSet = new Set(filteredPoiIds)
+      setSelectedPoiIds((current) => current.filter((poiId) => !filteredSet.has(poiId)))
       return
     }
 
-    setSelectedRouteIds((current) => uniqueStrings([...current, ...filteredRouteIds]))
+    setSelectedPoiIds((current) => uniqueStrings([...current, ...filteredPoiIds]))
   }
 
   async function handleSave() {
-    if (!tenant || selectedRouteIds.length === 0 || isSubmitting) {
+    if (!tenant || selectedPoiIds.length === 0 || isSubmitting) {
       return
     }
 
@@ -86,10 +86,10 @@ export default function TenantSelectLibraryRoutesPage() {
     setIsSubmitting(true)
 
     try {
-      assignRoutesToTenant(tenant.slug, selectedRouteIds)
-      router.push(`/tenant/${tenant.slug}/routes`)
+      assignPoisToTenant(tenant.slug, selectedPoiIds)
+      router.push(`/tenant/${tenant.slug}/pois`)
     } catch {
-      setSubmitError("No se han podido guardar las rutas seleccionadas. Inténtalo de nuevo.")
+      setSubmitError("No se han podido guardar los POIs seleccionados. Inténtalo de nuevo.")
     } finally {
       setIsSubmitting(false)
     }
@@ -100,7 +100,7 @@ export default function TenantSelectLibraryRoutesPage() {
       return
     }
 
-    router.push(`/tenant/${tenant.slug}/routes`)
+    router.push(`/tenant/${tenant.slug}/pois`)
   }
 
   if (!tenant) {
@@ -142,7 +142,9 @@ export default function TenantSelectLibraryRoutesPage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/tenant/${tenant.slug}/routes`}>Rutas</BreadcrumbLink>
+                <BreadcrumbLink href={`/tenant/${tenant.slug}/pois`}>
+                  Puntos de interés
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -154,48 +156,48 @@ export default function TenantSelectLibraryRoutesPage() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
           <PageSectionCard
-            title="Seleccionar rutas de la biblioteca"
-            description={`Selecciona rutas globales para añadirlas al tenant ${tenant.name}.`}
+            title="Seleccionar POIs de la biblioteca"
+            description={`Selecciona POIs globales para añadirlos al tenant ${tenant.name}.`}
           >
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <Button variant="outline" onClick={handleCancel}>
                 Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={selectedRouteIds.length === 0 || isSubmitting}>
+              <Button onClick={handleSave} disabled={selectedPoiIds.length === 0 || isSubmitting}>
                 {isSubmitting ? "Guardando..." : "Guardar"}
               </Button>
               <Input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Buscar una ruta..."
+                placeholder="Buscar un POI..."
                 className="sm:ml-auto sm:max-w-sm"
               />
               <Button
                 variant="outline"
                 onClick={handleToggleSelectAllFiltered}
-                disabled={filteredRouteIds.length === 0}
+                disabled={filteredPoiIds.length === 0}
               >
-                {allFilteredSelected ? "Deseleccionar todas" : "Seleccionar todas"}
+                {allFilteredSelected ? "Deseleccionar todos" : "Seleccionar todos"}
               </Button>
             </div>
 
             <p className="mb-3 text-sm text-muted-foreground">
-              {selectedRouteIds.length} seleccionadas · {filteredRouteIds.length} filtradas
+              {selectedPoiIds.length} seleccionados · {filteredPoiIds.length} filtrados
             </p>
 
-            <RouteLibraryTable
-              routes={allRoutes}
+            <PoiLibraryTable
+              pois={allPois}
               mode="select"
-              excludedRouteIds={assignedRouteIds}
-              selectedRouteIds={selectedRouteIds}
-              onSelectedRouteIdsChange={setSelectedRouteIds}
-              onFilteredRouteIdsChange={setFilteredRouteIds}
+              excludedPoiIds={assignedPoiIds}
+              selectedPoiIds={selectedPoiIds}
+              onSelectedPoiIdsChange={setSelectedPoiIds}
+              onFilteredPoiIdsChange={setFilteredPoiIds}
               searchText={searchText}
               onSearchTextChange={setSearchText}
-              emptyMessage="No hay rutas disponibles para añadir con los filtros actuales."
+              emptyMessage="No hay POIs disponibles para añadir con los filtros actuales."
               filterDialogTitle="Filtros de biblioteca"
-              filterDialogDescription="Filtra rutas para seleccionar las que quieras añadir al tenant."
-              toolbarAction={<CreateRouteAction href={`/tenant/${tenant.slug}/routes/new`} />}
+              filterDialogDescription="Filtra POIs para seleccionar los que quieras añadir al tenant."
+              toolbarAction={<CreatePoiAction href={`/tenant/${tenant.slug}/pois/new`} />}
             />
 
             {submitError && <p className="mt-3 text-sm text-destructive">{submitError}</p>}

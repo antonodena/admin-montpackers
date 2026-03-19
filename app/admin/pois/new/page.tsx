@@ -1,15 +1,27 @@
-import { PlusCircle } from "lucide-react"
+"use client"
+
+import { useRouter } from "next/navigation"
+
+import { PoiCreateScreen } from "@/components/pois/poi-create-screen"
+import { useResolvedTenants } from "@/hooks/use-resolved-tenant"
+import type { PoiLibraryItem } from "@/lib/poi-storage"
 
 export default function NewPoiPage() {
+  const router = useRouter()
+  const allTenants = useResolvedTenants()
+
+  function handleCreated(poi: PoiLibraryItem) {
+    router.push(`/admin/pois/${poi.id}`)
+  }
+
   return (
-    <section className="rounded-xl border bg-card p-5">
-      <div className="mb-2 flex items-center gap-2">
-        <PlusCircle className="size-5" />
-        <h1 className="text-lg font-semibold">Crear POI</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Formulario de creación de POI pendiente de siguiente iteración.
-      </p>
+    <section className="min-w-0">
+      <PoiCreateScreen
+        mode="admin"
+        cancelHref="/admin/pois"
+        tenants={allTenants}
+        onCreated={handleCreated}
+      />
     </section>
   )
 }

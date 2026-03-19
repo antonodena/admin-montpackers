@@ -4,7 +4,9 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ArrowRight, Building2 } from "lucide-react"
 
+import { PageMessageCard } from "@/components/shared/page-message-card"
 import { Button } from "@/components/ui/button"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { users } from "@/lib/mock-data"
 import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
 
@@ -14,52 +16,57 @@ export default function TenantDetailPage() {
 
   if (!tenant) {
     return (
-      <section className="rounded-xl border bg-card p-5">
-        <h1 className="text-lg font-semibold">Tenant no encontrado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Este tenant no existe o no está disponible en tu navegador actual.
-        </p>
-        <Button asChild className="mt-4">
-          <Link href="/admin/tenants">Volver a tenants</Link>
-        </Button>
-      </section>
+      <PageMessageCard
+        title="Tenant no encontrado"
+        description="Este tenant no existe o no está disponible en tu navegador actual."
+        action={
+          <Button asChild>
+            <Link href="/admin/tenants">Volver a tenants</Link>
+          </Button>
+        }
+      />
     )
   }
 
   const tenantUsers = users.filter((user) => user.tenantSlug === tenant.slug)
 
   return (
-    <section className="space-y-4">
-      <article className="rounded-xl border bg-card p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Tenant</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">{tenant.name}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{tenant.siteUrl}</p>
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-1">
+            <CardDescription>Tenant</CardDescription>
+            <CardTitle className="text-2xl tracking-tight">{tenant.name}</CardTitle>
+            <CardDescription>{tenant.siteUrl}</CardDescription>
           </div>
-          <Button asChild>
-            <Link href={`/tenant/${tenant.slug}`}>
-              Acceder tenant
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-        </div>
-      </article>
+          <CardAction>
+            <Button asChild>
+              <Link href={`/tenant/${tenant.slug}`}>
+                Acceder tenant
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+          </CardAction>
+        </CardHeader>
+      </Card>
 
-      <article className="rounded-xl border bg-card p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <Building2 className="size-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold">Usuarios asociados</h2>
-        </div>
-        <ul className="space-y-2 text-sm text-muted-foreground">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Building2 className="size-4 text-muted-foreground" />
+            <CardTitle className="text-base">Usuarios asociados</CardTitle>
+          </div>
+          <CardDescription>Usuarios con acceso directo a este tenant.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
           {tenantUsers.map((user) => (
-            <li key={user.id} className="rounded-md bg-muted/50 px-3 py-2">
+            <div key={user.id} className="rounded-md border bg-muted/50 px-3 py-2">
               {user.name} · {user.email}
-            </li>
+            </div>
           ))}
-          {tenantUsers.length === 0 && <li>Sin usuarios asociados.</li>}
-        </ul>
-      </article>
-    </section>
+          {tenantUsers.length === 0 && <p>Sin usuarios asociados.</p>}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

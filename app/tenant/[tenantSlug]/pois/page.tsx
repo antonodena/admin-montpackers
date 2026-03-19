@@ -8,7 +8,8 @@ import { Eye, MoreHorizontal, Plus } from "lucide-react"
 
 import { ColumnHeader } from "@/components/admin/column-header"
 import { DataTable } from "@/components/admin/data-table"
-import { AddRouteChoiceDialog } from "@/components/tenant/add-route-choice-dialog"
+import { AppSidebar } from "@/components/app-sidebar"
+import { AddPoiChoiceDialog } from "@/components/tenant/add-poi-choice-dialog"
 import { PageMessageCard } from "@/components/shared/page-message-card"
 import { PageSectionCard } from "@/components/shared/page-section-card"
 import { Button } from "@/components/ui/button"
@@ -32,27 +33,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
 import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
-import type { RouteLibraryItem } from "@/lib/routes-data"
-import { getTenantRoutes } from "@/lib/route-storage"
+import type { PoiLibraryItem } from "@/lib/poi-storage"
+import { getTenantPois } from "@/lib/poi-storage"
 
-function formatDuration(durationMin: number) {
-  const hours = Math.floor(durationMin / 60)
-  const minutes = durationMin % 60
-
-  if (hours === 0) {
-    return `${minutes} min`
-  }
-
-  if (minutes === 0) {
-    return `${hours} h`
-  }
-
-  return `${hours} h ${minutes} min`
-}
-
-function buildColumns(): ColumnDef<RouteLibraryItem>[] {
+function buildColumns(): ColumnDef<PoiLibraryItem>[] {
   return [
     {
       accessorKey: "coverImageUrl",
@@ -83,31 +68,23 @@ function buildColumns(): ColumnDef<RouteLibraryItem>[] {
 
         return (
           row.original.name.toLowerCase().includes(query) ||
-          row.original.author.toLowerCase().includes(query)
+          row.original.type.toLowerCase().includes(query) ||
+          row.original.subtype.toLowerCase().includes(query)
         )
       },
     },
     {
-      accessorKey: "sport",
-      header: ({ column }) => <ColumnHeader column={column} title="Deporte" />,
+      accessorKey: "type",
+      header: ({ column }) => <ColumnHeader column={column} title="Tipo" />,
     },
     {
-      accessorKey: "difficulty",
-      header: ({ column }) => <ColumnHeader column={column} title="Dificultad" />,
-    },
-    {
-      accessorKey: "distanceKm",
-      header: ({ column }) => <ColumnHeader column={column} title="Distancia" />,
-      cell: ({ row }) => `${row.original.distanceKm.toFixed(1)} km`,
-    },
-    {
-      accessorKey: "durationMin",
-      header: ({ column }) => <ColumnHeader column={column} title="Duración" />,
-      cell: ({ row }) => formatDuration(row.original.durationMin),
-    },
-    {
-      accessorKey: "author",
-      header: ({ column }) => <ColumnHeader column={column} title="Autor" />,
+      accessorKey: "subtype",
+      header: ({ column }) => <ColumnHeader column={column} title="Subtipo" />,
+      cell: ({ row }) => (
+        <span className="block max-w-[240px] truncate text-muted-foreground">
+          {row.original.subtype}
+        </span>
+      ),
     },
     {
       id: "actions",
@@ -124,9 +101,9 @@ function buildColumns(): ColumnDef<RouteLibraryItem>[] {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
-              <Link href={`/admin/routes/${row.original.id}`}>
+              <Link href={`/admin/pois/${row.original.id}`}>
                 <Eye className="size-4" />
-                Ver ruta
+                Ver POI
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -136,16 +113,16 @@ function buildColumns(): ColumnDef<RouteLibraryItem>[] {
   ]
 }
 
-export default function TenantRoutesPage() {
+export default function TenantPoisPage() {
   const router = useRouter()
   const params = useParams<{ tenantSlug: string }>()
   const tenantSlug = params.tenantSlug
 
   const tenant = useResolvedTenant(tenantSlug)
-  const [tenantRoutes] = React.useState<RouteLibraryItem[]>(() =>
-    tenantSlug ? getTenantRoutes(tenantSlug) : []
+  const [tenantPois] = React.useState<PoiLibraryItem[]>(() =>
+    tenantSlug ? getTenantPois(tenantSlug) : []
   )
-  const [isAddRouteChoiceOpen, setIsAddRouteChoiceOpen] = React.useState(false)
+  const [isAddPoiChoiceOpen, setIsAddPoiChoiceOpen] = React.useState(false)
 
   const columns = React.useMemo(() => buildColumns(), [])
 
@@ -188,7 +165,7 @@ export default function TenantRoutesPage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Rutas</BreadcrumbPage>
+                <BreadcrumbPage>Puntos de interés</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -196,29 +173,29 @@ export default function TenantRoutesPage() {
 
         <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <PageSectionCard
-            title="Rutas del tenant"
-            description={`Gestiona las rutas asociadas a ${tenant.name} desde la biblioteca global.`}
+            title="POIs del tenant"
+            description={`Gestiona los puntos de interés asociados a ${tenant.name} desde la biblioteca global.`}
           >
             <DataTable
               columns={columns}
-              data={tenantRoutes}
+              data={tenantPois}
               filterColumn="name"
-              filterPlaceholder="Buscar por nombre o autor..."
+              filterPlaceholder="Buscar por nombre, tipo o subtipo..."
               toolbarAction={
-                <Button onClick={() => setIsAddRouteChoiceOpen(true)}>
+                <Button onClick={() => setIsAddPoiChoiceOpen(true)}>
                   <Plus data-icon="inline-start" />
-                  Añadir ruta
+                  Añadir POI
                 </Button>
               }
             />
           </PageSectionCard>
         </main>
 
-        <AddRouteChoiceDialog
-          open={isAddRouteChoiceOpen}
-          onOpenChange={setIsAddRouteChoiceOpen}
-          onSelectFromLibrary={() => router.push(`/tenant/${tenant.slug}/routes/select`)}
-          onCreateRoute={() => router.push(`/tenant/${tenant.slug}/routes/new`)}
+        <AddPoiChoiceDialog
+          open={isAddPoiChoiceOpen}
+          onOpenChange={setIsAddPoiChoiceOpen}
+          onSelectFromLibrary={() => router.push(`/tenant/${tenant.slug}/pois/select`)}
+          onCreatePoi={() => router.push(`/tenant/${tenant.slug}/pois/new`)}
         />
       </SidebarInset>
     </SidebarProvider>

@@ -1,11 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { RouteCreateScreen } from "@/components/routes/route-create-screen"
+import { PoiCreateScreen } from "@/components/pois/poi-create-screen"
 import { PageMessageCard } from "@/components/shared/page-message-card"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useResolvedTenant } from "@/hooks/use-resolved-tenant"
 
-export default function TenantCreateRoutePage() {
+export default function TenantCreatePoiPage() {
   const router = useRouter()
   const params = useParams<{ tenantSlug: string }>()
   const tenant = useResolvedTenant(params.tenantSlug)
@@ -68,11 +67,13 @@ export default function TenantCreateRoutePage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/tenant/${tenant.slug}/routes`}>Rutas</BreadcrumbLink>
+                <BreadcrumbLink href={`/tenant/${tenant.slug}/pois`}>
+                  Puntos de interés
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Nueva ruta</BreadcrumbPage>
+                <BreadcrumbPage>Nuevo POI</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -80,11 +81,11 @@ export default function TenantCreateRoutePage() {
 
         <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <section>
-            <RouteCreateScreen
+            <PoiCreateScreen
               mode="tenant"
               tenant={tenant}
-              cancelHref={`/tenant/${tenant.slug}/routes`}
-              onCreated={() => router.push(`/tenant/${tenant.slug}/routes?created=1`)}
+              cancelHref={`/tenant/${tenant.slug}/pois`}
+              onCreated={() => router.push(`/tenant/${tenant.slug}/pois?created=1`)}
             />
           </section>
         </main>

@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation"
 import { Clapperboard, ImagePlus, LoaderCircle, Trash2, Upload } from "lucide-react"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { PageMessageCard } from "@/components/shared/page-message-card"
 import { Button } from "@/components/ui/button"
 import {
   Breadcrumb,
@@ -761,20 +762,22 @@ export default function TenantKiosksPage() {
 
   if (!tenant) {
     return (
-      <section className="m-6 rounded-xl border bg-card p-5">
-        <h1 className="text-lg font-semibold">Tenant no encontrado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          El tenant que intentas abrir no existe en esta instancia.
-        </p>
-        <div className="mt-4 flex gap-2">
-          <Button asChild>
-            <Link href="/admin/tenants">Volver a admin tenants</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/">Ir al tenant por defecto</Link>
-          </Button>
-        </div>
-      </section>
+      <PageMessageCard
+        title="Tenant no encontrado"
+        description="El tenant que intentas abrir no existe en esta instancia."
+        className="m-6"
+        action={
+          <>
+            <Button asChild>
+              <Link href="/admin/tenants">Volver a admin tenants</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/">Ir al tenant por defecto</Link>
+            </Button>
+          </>
+        }
+        footerClassName="flex flex-wrap gap-2"
+      />
     )
   }
 
@@ -805,21 +808,22 @@ export default function TenantKiosksPage() {
         <div aria-hidden="true" className="h-16 shrink-0" />
 
         <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <section className="rounded-xl border bg-card p-4 md:p-6">
-            <div className="mb-6">
+          <Card className="py-4 md:py-6">
+            <CardHeader className="px-4 md:px-6">
               <h1 className="text-lg font-semibold">Configuración de kioskos</h1>
               <p className="text-sm text-muted-foreground">
                 Edita el contenido mostrado en cada tótem del tenant {tenant.name}.
               </p>
-            </div>
+            </CardHeader>
 
-            {!activeDraft ? (
-              <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-                Cargando configuración de kiosko...
-              </div>
-            ) : (
-              <form className="flex flex-col gap-6" onSubmit={handleSaveConfig}>
-                <Card>
+            <CardContent className="px-4 md:px-6">
+              {!activeDraft ? (
+                <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
+                  Cargando configuración de kiosko...
+                </div>
+              ) : (
+                <form className="flex flex-col gap-6" onSubmit={handleSaveConfig}>
+                  <Card>
                   <CardHeader>
                     <CardTitle>Nombre del tótem</CardTitle>
                     <CardDescription>
@@ -912,7 +916,7 @@ export default function TenantKiosksPage() {
                       }}
                     >
                       {activeDraft.previewUrl ? (
-                        <div className="space-y-4 p-4">
+                        <div className="flex flex-col gap-4 p-4">
                           <div className="overflow-hidden rounded-lg border bg-black">
                             <video
                               className="aspect-video w-full"
@@ -937,11 +941,11 @@ export default function TenantKiosksPage() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <Button type="button" variant="outline" onClick={openVideoPicker}>
-                                <Upload className="size-4" />
+                                <Upload data-icon="inline-start" />
                                 Reemplazar
                               </Button>
                               <Button type="button" variant="outline" onClick={handleRemoveVideo}>
-                                <Trash2 className="size-4" />
+                                <Trash2 data-icon="inline-start" />
                                 Eliminar
                               </Button>
                             </div>
@@ -963,7 +967,7 @@ export default function TenantKiosksPage() {
                           <div className="flex size-12 items-center justify-center rounded-full border bg-background">
                             <Clapperboard className="size-5 text-muted-foreground" />
                           </div>
-                          <div className="space-y-1">
+                          <div className="flex flex-col gap-1">
                             <p className="text-sm font-medium">
                               Arrastra un MP4 aquí o haz click para seleccionarlo
                             </p>
@@ -972,7 +976,7 @@ export default function TenantKiosksPage() {
                             </p>
                           </div>
                           <Button type="button" variant="outline">
-                            <Upload className="size-4" />
+                            <Upload data-icon="inline-start" />
                             Seleccionar vídeo
                           </Button>
                         </div>
@@ -1069,7 +1073,7 @@ export default function TenantKiosksPage() {
                         <div className="flex size-12 items-center justify-center rounded-full border bg-background">
                           <ImagePlus className="size-5 text-muted-foreground" />
                         </div>
-                        <div className="space-y-1">
+                        <div className="flex flex-col gap-1">
                           <p className="text-sm font-medium">
                             Arrastra imágenes aquí o haz click para seleccionarlas
                           </p>
@@ -1085,7 +1089,7 @@ export default function TenantKiosksPage() {
                           )}
                         </div>
                         <Button type="button" variant="outline">
-                          <Upload className="size-4" />
+                          <Upload data-icon="inline-start" />
                           {activeDraft.imageAssets.length > 0
                             ? "Añadir más imágenes"
                             : "Seleccionar imágenes"}
@@ -1119,7 +1123,7 @@ export default function TenantKiosksPage() {
                                 variant="outline"
                                 onClick={() => handleRemoveImage(asset.id)}
                               >
-                                <Trash2 className="size-4" />
+                                <Trash2 data-icon="inline-start" />
                                 Eliminar
                               </Button>
                             </div>
@@ -1187,9 +1191,10 @@ export default function TenantKiosksPage() {
                     {isSaving ? "Guardando..." : "Guardar configuración"}
                   </Button>
                 </div>
-              </form>
-            )}
-          </section>
+                </form>
+              )}
+            </CardContent>
+          </Card>
         </main>
       </SidebarInset>
     </SidebarProvider>

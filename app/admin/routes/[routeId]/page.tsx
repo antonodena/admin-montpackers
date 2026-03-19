@@ -5,7 +5,17 @@ import * as React from "react"
 import { useParams } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
+import { PageMessageCard } from "@/components/shared/page-message-card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { getRouteById } from "@/lib/route-storage"
 
 function formatDuration(durationMin: number) {
@@ -30,25 +40,28 @@ export default function RouteDetailPage() {
 
   if (!routeData) {
     return (
-      <section className="rounded-xl border bg-card p-5">
-        <h1 className="text-lg font-semibold">Ruta no encontrada</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          La ruta con id <span className="font-medium text-foreground">{routeId}</span> no está
-          disponible.
-        </p>
-        <Button asChild className="mt-4" variant="outline">
-          <Link href="/admin/routes">
-            <ArrowLeft className="size-4" />
-            Volver a biblioteca
-          </Link>
-        </Button>
-      </section>
+      <PageMessageCard
+        title="Ruta no encontrada"
+        description={
+          <>
+            La ruta con id <span className="font-medium text-foreground">{routeId}</span> no está
+            disponible.
+          </>
+        }
+        action={
+          <Button asChild variant="outline">
+            <Link href="/admin/routes">
+              <ArrowLeft data-icon="inline-start" />
+              Volver a biblioteca
+            </Link>
+          </Button>
+        }
+      />
     )
   }
 
   return (
-    <section className="space-y-4">
-      <article className="overflow-hidden rounded-xl border bg-card">
+    <Card className="overflow-hidden gap-0 py-0">
         <div className="h-48 w-full bg-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -57,35 +70,40 @@ export default function RouteDetailPage() {
             className="h-full w-full object-cover"
           />
         </div>
-        <div className="p-5">
-          <h1 className="text-xl font-semibold">{routeData.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {routeData.routeCode} · {routeData.region} · {routeData.sport} · {routeData.difficulty}
-          </p>
-          {routeData.description && (
-            <p className="mt-3 text-sm text-muted-foreground">{routeData.description}</p>
-          )}
-          <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-            <p>Tenants relacionados: {routeData.tenantCount}</p>
-            <p>Distancia: {routeData.distanceKm.toFixed(1)} km</p>
-            <p>Desnivel: {routeData.elevationGainM} m</p>
-            <p>Duración: {formatDuration(routeData.durationMin)}</p>
-            <p>Circular: {routeData.isCircular ? "Sí" : "No"}</p>
-            <p>Iniciación: {routeData.isBeginnerFriendly ? "Sí" : "No"}</p>
-            <p>Familiar: {routeData.isFamilyFriendly ? "Sí" : "No"}</p>
-            <p>Orientación: {routeData.orientation}</p>
-            <p>Dirección: {routeData.direction}</p>
-            <p>Autor: {routeData.author}</p>
+        <CardHeader className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <CardTitle className="text-xl">{routeData.name}</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{routeData.routeCode}</Badge>
+              <Badge variant="secondary">{routeData.region}</Badge>
+              <Badge variant="secondary">{routeData.sport}</Badge>
+              <Badge variant="secondary">{routeData.difficulty}</Badge>
+            </div>
+            {routeData.description ? (
+              <CardDescription>{routeData.description}</CardDescription>
+            ) : null}
           </div>
-
-          <Button asChild className="mt-5">
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+          <p>Tenants relacionados: {routeData.tenantCount}</p>
+          <p>Distancia: {routeData.distanceKm.toFixed(1)} km</p>
+          <p>Desnivel: {routeData.elevationGainM} m</p>
+          <p>Duración: {formatDuration(routeData.durationMin)}</p>
+          <p>Circular: {routeData.isCircular ? "Sí" : "No"}</p>
+          <p>Iniciación: {routeData.isBeginnerFriendly ? "Sí" : "No"}</p>
+          <p>Familiar: {routeData.isFamilyFriendly ? "Sí" : "No"}</p>
+          <p>Orientación: {routeData.orientation}</p>
+          <p>Dirección: {routeData.direction}</p>
+          <p>Autor: {routeData.author}</p>
+        </CardContent>
+        <CardFooter>
+          <Button asChild>
             <Link href={`/admin/routes/${routeData.id}/edit`}>
               Editar ruta
-              <ArrowRight className="size-4" />
+              <ArrowRight data-icon="inline-end" />
             </Link>
           </Button>
-        </div>
-      </article>
-    </section>
+        </CardFooter>
+    </Card>
   )
 }

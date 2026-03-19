@@ -871,47 +871,61 @@ export function RouteForm({
           </Field>
 
           {formState.gpxFile && (
-            <div className="rounded-xl border bg-muted/20 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">{formState.gpxFile.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(formState.gpxFile.sizeBytes)} · {formState.gpxFile.mimeType}
-                  </p>
+            <Card className="gap-4 py-4 shadow-none">
+              <CardContent className="flex flex-col gap-4 px-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">{formState.gpxFile.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(formState.gpxFile.sizeBytes)} · {formState.gpxFile.mimeType}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => gpxInputRef.current?.click()}
+                    >
+                      <Upload data-icon="inline-start" />
+                      Reemplazar
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={removeGpxFile}>
+                      <Trash2 data-icon="inline-start" />
+                      Eliminar
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" onClick={() => gpxInputRef.current?.click()}>
-                    <Upload data-icon="inline-start" />
-                    Reemplazar
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={removeGpxFile}>
-                    <Trash2 data-icon="inline-start" />
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <div className="rounded-lg border bg-background p-3">
-                  <p className="text-xs text-muted-foreground">Distancia detectada</p>
-                  <p className="text-sm font-medium">
-                    {formatMetricDistance(formState.gpxMetrics?.distanceKm ?? null)}
-                  </p>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <Card className="gap-2 py-3 shadow-none">
+                    <CardContent className="flex flex-col gap-1 px-3">
+                      <p className="text-xs text-muted-foreground">Distancia detectada</p>
+                      <p className="text-sm font-medium">
+                        {formatMetricDistance(formState.gpxMetrics?.distanceKm ?? null)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="gap-2 py-3 shadow-none">
+                    <CardContent className="flex flex-col gap-1 px-3">
+                      <p className="text-xs text-muted-foreground">
+                        Desnivel positivo detectado
+                      </p>
+                      <p className="text-sm font-medium">
+                        {formatMetricElevation(formState.gpxMetrics?.elevationGainM ?? null)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="gap-2 py-3 shadow-none">
+                    <CardContent className="flex flex-col gap-1 px-3">
+                      <p className="text-xs text-muted-foreground">Duración detectada</p>
+                      <p className="text-sm font-medium">
+                        {formatMetricDuration(formState.gpxMetrics?.durationMin ?? null)}
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
-                <div className="rounded-lg border bg-background p-3">
-                  <p className="text-xs text-muted-foreground">Desnivel positivo detectado</p>
-                  <p className="text-sm font-medium">
-                    {formatMetricElevation(formState.gpxMetrics?.elevationGainM ?? null)}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-background p-3">
-                  <p className="text-xs text-muted-foreground">Duración detectada</p>
-                  <p className="text-sm font-medium">
-                    {formatMetricDuration(formState.gpxMetrics?.durationMin ?? null)}
-                  </p>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
